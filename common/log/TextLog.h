@@ -1,9 +1,3 @@
-/**
- * @Description: Text Log File
- * @Author: guoyc.2009@gmail.com
- * @Create Date: 2013-6
-*/
-
 #ifndef _TEXT_LOG_H_
 #define _TEXT_LOG_H_
 

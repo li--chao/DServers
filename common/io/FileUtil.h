@@ -1,9 +1,3 @@
-/**
-* @Description: File Util
-* @Author: guoyc.2009@gmail.com
-* @Create Date: 2011-10
-*/
-
 #ifndef _FILE_UTIL_H_
 #define _FILE_UTIL_H_
 

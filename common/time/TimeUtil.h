@@ -1,10 +1,4 @@
-﻿/**
- * @Description: Time Util
- * @Author: guoyc.2009@gmail.com
- * @Create Date: 2013-2
-*/
-
-#ifndef _TIME_UTIL_H_
+﻿#ifndef _TIME_UTIL_H_
 #define _TIME_UTIL_H_
 
 #include <time.h>

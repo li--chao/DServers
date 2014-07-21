@@ -1,10 +1,4 @@
-﻿/**
- * @Description: Log Common
- * @Author: guoyc.2009@gmail.com
- * @Create Date: 2013-7
-*/
-
-#ifndef _LOG_COMMON_H_
+﻿#ifndef _LOG_COMMON_H_
 #define _LOG_COMMON_H_
 
 #include "../BaseCommon.h"
