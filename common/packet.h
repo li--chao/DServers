@@ -22,7 +22,7 @@ struct TestProtocol
 	PacketHead m_phPrtcolHead;
 	unsigned int m_uiTestDataA;
 	unsigned int m_uiTestDataB;
-	unsigned short m_usEndCode;    //  每条协议都不许加
+	unsigned short m_usEndCode;    //  每条协议都必须加
 };
 
 union TestProtocolUn

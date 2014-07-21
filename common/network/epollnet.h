@@ -9,10 +9,13 @@ public:
 	LCEpollNet();
 	virtual ~LCEpollNet();
 	int Init();
-	int BindAndLsn(const int& iBackLog, const unsigned short& usPort);
 	
 protected:
+	OverLap* m_pIOQueue;
+	int m_epSocket;
+	struct epoll_event *m_pEpollEvs;
 
+	int BindAndLsn(const int& iBackLog, const unsigned short& usPort);
 private:
 
 };
