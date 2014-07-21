@@ -1,4 +1,4 @@
-It's a readme file.
+写着玩(备忘)的
 
 服务器种类：
 1.接入服务器
@@ -17,3 +17,19 @@ It's a readme file.
 服务器监控
 
 
+PacketSizeeConfig
+最大/小数据包长度
+数据包头长度
+
+LogConfig
+日志文件名
+日志路径
+最大文件大小
+过期时间
+
+NetParamConfig
+工作线程数
+网口设备名称
+队列长度
+并发数
+端口
