@@ -33,3 +33,14 @@ NetParamConfig
 队列长度
 并发数
 端口
+
+
+         业务
+外部服务       内部客户端
+  net             netcli
+netconfig       netconfig
+        log
+        logconfig
+  
+  
+  
