@@ -1,6 +1,6 @@
 #include "epollnet.h"
 
-LCEpollNet::LCEpollNet()
+LcEpollNet::LcEpollNet()
 {
 	m_uiPacketHeadSize = HEADSIZE;
 	m_uiMinPacketSize = HEADSIZE;
@@ -12,19 +12,19 @@ LCEpollNet::LCEpollNet()
 	m_pEpollEvs = NULL;
 }
 
-LCEpollNet::~LCEpollNet()
+LcEpollNet::~LcEpollNet()
 {
 
 
 }
 
-int LCEpollNet::Init()
+int LcEpollNet::Init()
 {
 
 	return 0;
 }
 
-int LCEpollNet::BindAndLsn(const int& iBackLog, const unsigned short& usPort)
+int LcEpollNet::BindAndLsn(const int& iBackLog, const unsigned short& usPort)
 {
 
 	return 0;

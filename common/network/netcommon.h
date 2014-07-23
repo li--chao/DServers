@@ -38,7 +38,7 @@ struct OverLap
 	unsigned long long u64LastRecvPack;
 };
 
-class LCAbstractNet
+class LcAbstractNet
 {
 public:
 	virtual int Init() = 0;

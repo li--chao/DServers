@@ -3,11 +3,11 @@
 
 #include "netcommon.h"
 
-class LCEpollNet : public LCAbstractNet
+class LcEpollNet : public LcAbstractNet
 {
 public:
-	LCEpollNet();
-	virtual ~LCEpollNet();
+	LcEpollNet();
+	virtual ~LcEpollNet();
 	int Init();
 	
 protected:
