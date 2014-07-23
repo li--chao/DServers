@@ -10,8 +10,6 @@
 #include "../packet.h"
 
 
-#define QUEUE_LENGTH 10240
-
 struct OverLap
 {
 	OverLap()
@@ -20,7 +18,7 @@ struct OverLap
 		pNext = 0;
 		szpComBuf = 0;
 		fd = -1;
-		uiComLen = 0;
+		uiComLen = MAX_PACKET_SIZE;
 		uiFinishLen = 0;
 		uiPeerIP = 0;
 		usPeerPort = 0;

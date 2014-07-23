@@ -3,6 +3,7 @@
 
 int main(int argc, char** argv)
 {
-
+	LcEpollNet epollNet;
+	epollNet.InitDefault();
 	return 0;
 }
