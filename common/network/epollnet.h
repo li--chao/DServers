@@ -9,6 +9,7 @@ public:
 	LcEpollNet();
 	virtual ~LcEpollNet();
 	int Init();
+	int InitDefault();
 	
 protected:
 	OverLap* m_pIOQueue;
