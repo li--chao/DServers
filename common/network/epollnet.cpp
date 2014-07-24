@@ -30,6 +30,11 @@ int LcEpollNet::BindAndLsn(const int& iBackLog, const unsigned short& usPort)
 	return 0;
 }
 
+int LcEpollNet::BindAndLsn()
+{
+	m_lsnSocket = socket(AF_INET, SOCK_STREAM, 0);	
+}
+
 int LcEpollNet::InitDefault()
 {
 	m_pIOQueue = new OverLap[10240];

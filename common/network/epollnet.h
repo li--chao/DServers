@@ -11,6 +11,7 @@ public:
 	virtual ~LcEpollNet();
 	int Init();
 	int InitDefault();
+	int BindAndLsn();
 	
 protected:
 	OverLap* m_pIOQueue;
