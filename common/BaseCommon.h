@@ -15,7 +15,7 @@
 #define MD5_STRID_SIZE 16
 #define PWD_STRID_SIZE 32
 
-typedef struct _ClusterNode
+typedef struct ClusterNode
 {
 	unsigned int uiNodeIP;
 	unsigned short usNodePort;

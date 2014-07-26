@@ -33,6 +33,8 @@ int LcEpollNet::BindAndLsn(const int& iBackLog, const unsigned short& usPort)
 int LcEpollNet::BindAndLsn()
 {
 	m_lsnSocket = socket(AF_INET, SOCK_STREAM, 0);	
+
+	return 0;
 }
 
 int LcEpollNet::InitDefault()

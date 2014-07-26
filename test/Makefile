@@ -10,7 +10,7 @@ NetworkUtils = $(NetWorkModPath)/epollnet.o
 IOUtils = $(IOModPath)/FileUtil.o
 
 COMS = $(NetworkUtils) $(IOUtils)
-OBJS = ./unittest.o $(COMS)
+OBJS = ./unittest.o ../servconfig.o $(COMS)
 
 CXX = g++
 CXXFLAGS = -g -Wall -c 

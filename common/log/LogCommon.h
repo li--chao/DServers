@@ -10,7 +10,7 @@ struct LogConfig
 		*szpLogPath = 0;
 		*szpLogName = 0;
 		u64LimitSize = 512<<20;
-		uiExpiredDays = 30;	
+		uiExpiredDays = 30;
 	}
 
 	char szpLogPath[FILE_PATH_SIZE];
