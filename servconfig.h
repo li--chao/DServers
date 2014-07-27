@@ -11,6 +11,7 @@
 #define DEFAULT_HEAD_PACKET_SIZE 20
 #define DEFAULT_LOG_NAME "UnitTest"
 #define DEFAULT_FILE_PATH_NAME "./logs/"
+#define DEFAULT_BACK_LOG 20
 
 
 class ServConfig : public BaseConfig
@@ -20,13 +21,6 @@ public:
 	~ServConfig();
 	int ReadCfgFile(const char* szpFileName);
 	int CheckCfg();
-
-	unsigned short m_usServPort;
-	char szpLogPath[FILE_PATH_SIZE];
-	char szpLogName[FIELD_NAME_SIZE];
-	unsigned int m_uiMaxPacketSize;
-	unsigned int m_uiConcurrentNum;
-	unsigned int m_uiHeadPacketSize;
 };
 
 #endif

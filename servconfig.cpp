@@ -1,11 +1,12 @@
 #include "servconfig.h"
 
-ServConfig::ServConfig():
-m_usServPort(DEFAULT_PORT),
-m_uiMaxPacketSize(DEFAULT_MAX_PACKET_SIZE),
-m_uiConcurrentNum(DEFAULT_CONCURRENT_NUM),
-m_uiHeadPacketSize(DEFAULT_HEAD_PACKET_SIZE)
+ServConfig::ServConfig()
 {
+	m_usServPort = DEFAULT_PORT;
+	m_uiMaxPacketSize = DEFAULT_MAX_PACKET_SIZE;
+	m_uiConcurrentNum = DEFAULT_CONCURRENT_NUM;
+	m_uiHeadPacketSize = DEFAULT_HEAD_PACKET_SIZE;
+	m_iBackLog = DEFAULT_BACK_LOG;
 	strcpy(szpLogName, DEFAULT_LOG_NAME);
 	strcpy(szpLogPath, DEFAULT_FILE_PATH_NAME);
 }
