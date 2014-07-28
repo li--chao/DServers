@@ -44,7 +44,7 @@ public:
 	inline const unsigned int& PacketHeadSize() const {	return m_uiPacketHeadSize;	}
 	inline const unsigned int& MinPacketSize() const {	return m_uiMinPacketSize;  }
 	inline const unsigned int& MaxPacketSize() const {	return m_uiMaxPacketSize;  }
-	virtual int Init(const BaseConfig* pBaseConfig, TextLog& textLog) = 0;
+	virtual int Init(BaseConfig* pBaseConfig, TextLog& textLog) = 0;
 	virtual int StartThread() = 0;
 
 protected:

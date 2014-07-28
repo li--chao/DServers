@@ -21,9 +21,10 @@ LcEpollNet::~LcEpollNet()
 
 }
 
-int LcEpollNet::Init(const BaseConfig* pBaseConfig, TextLog& textLog)
+int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 {
 	m_txlNetLog = &textLog;
+	m_pBaseConfig = pBaseConfig;
 
 	struct timeval tvTimeOut;
 	tvTimeOut.tv_sec = 0;
@@ -145,5 +146,8 @@ int LcEpollNet::InitDefault()
 
 void* LcEpollNet::Thread_NetServ(void* param)
 {
+	LcEpollNet* pNet = (LcEpollNet*)param;
+
+
 	return NULL;
 }

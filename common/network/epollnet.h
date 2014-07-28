@@ -9,7 +9,7 @@ class LcEpollNet : public LcAbstractNet
 public:
 	LcEpollNet();
 	virtual ~LcEpollNet();
-	int Init(const BaseConfig* pBaseConfig, TextLog& textLog);
+	int Init(BaseConfig* pBaseConfig, TextLog& textLog);
 	int InitDefault();
 	int StartThread();
 	
@@ -21,6 +21,7 @@ private:
 	int m_epSocket;
 	struct epoll_event *m_pEpollEvs;
 	char* m_szpPackMem;
+	BaseConfig* m_pBaseConfig;	
 
 	static void* Thread_NetServ(void* param);
 };
