@@ -11,6 +11,7 @@ public:
 	virtual ~LcEpollNet();
 	int Init(const BaseConfig* pBaseConfig, TextLog& textLog);
 	int InitDefault();
+	int StartThread();
 	
 protected:
 	int BindAndLsn(const int& iBackLog, const unsigned short& usPort);
@@ -20,6 +21,8 @@ private:
 	int m_epSocket;
 	struct epoll_event *m_pEpollEvs;
 	char* m_szpPackMem;
+
+	static void* Thread_NetServ(void* param);
 };
 
 #endif

@@ -9,7 +9,7 @@
 #include "../log/TextLog.h"
 #include "../packet.h"
 #include "../baseconfig.h"
-
+#include <pthread.h>
 
 struct OverLap
 {
@@ -45,6 +45,7 @@ public:
 	inline const unsigned int& MinPacketSize() const {	return m_uiMinPacketSize;  }
 	inline const unsigned int& MaxPacketSize() const {	return m_uiMaxPacketSize;  }
 	virtual int Init(const BaseConfig* pBaseConfig, TextLog& textLog) = 0;
+	virtual int StartThread() = 0;
 
 protected:
 	unsigned int m_uiPacketHeadSize;

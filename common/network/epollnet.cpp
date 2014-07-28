@@ -77,7 +77,51 @@ int LcEpollNet::Init(const BaseConfig* pBaseConfig, TextLog& textLog)
 
 int LcEpollNet::BindAndLsn(const int& iBackLog, const unsigned short& usPort)
 {
-	
+	sockaddr_in svrSockAddr;
+	svrSockAddr.sin_family = AF_INET;
+	svrSockAddr.sin_port = htons(usPort);
+	svrSockAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+	m_epSocket = epoll_create(16);
+	if(m_epSocket == -1)
+	{
+		m_txlNetLog->Write("epoll_create error!");
+		return -1;
+	}
+
+	struct epoll_event ev;
+	ev.events = EPOLLIN;
+	ev.data.fd = m_lsnSocket;
+	if(epoll_ctl(m_epSocket, EPOLL_CTL_ADD, m_lsnSocket, &ev))
+	{
+		m_txlNetLog->Write("epoll_ctl add lsnSocket error!");
+		return -1;
+	}
+
+	if(bind(m_lsnSocket, (sockaddr*)&svrSockAddr, sizeof(svrSockAddr)) == -1)
+	{
+		m_txlNetLog->Write("bind lsnSocket error!");
+		return -1;
+	}
+
+	if(listen(m_lsnSocket, iBackLog) == -1)
+	{
+		m_txlNetLog->Write("listen lsnSocket error!");
+		return -1;
+	}
+	return 0;
+}
+
+int LcEpollNet::StartThread()
+{
+	pthread_t posix_thrd;
+	int ret = pthread_create(&posix_thrd, NULL, Thread_NetServ, this);
+	if(ret)
+	{
+		m_txlNetLog->Write("pthread_create Thread_NetServ error!");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -99,4 +143,7 @@ int LcEpollNet::InitDefault()
 	return 0;
 }
 
-
+void* LcEpollNet::Thread_NetServ(void* param)
+{
+	return NULL;
+}
