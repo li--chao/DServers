@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <fcntl.h>
 #include "../log/TextLog.h"
 #include "../packet.h"
@@ -40,17 +41,10 @@ struct OverLap
 class LcAbstractNet
 {
 public:
-	virtual int Init() = 0;
-	inline const unsigned int& PacketHeadSize() const {	return m_uiPacketHeadSize;	}
-	inline const unsigned int& MinPacketSize() const {	return m_uiMinPacketSize;  }
-	inline const unsigned int& MaxPacketSize() const {	return m_uiMaxPacketSize;  }
 	virtual int Init(BaseConfig* pBaseConfig, TextLog& textLog) = 0;
 	virtual int StartThread() = 0;
 
 protected:
-	unsigned int m_uiPacketHeadSize;
-	unsigned int m_uiMinPacketSize;
-	unsigned int m_uiMaxPacketSize;
 	int m_lsnSocket;
 	TextLog* m_txlNetLog;
 

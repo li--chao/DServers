@@ -4,9 +4,6 @@
 
 LcEpollNet::LcEpollNet()
 {
-	m_uiPacketHeadSize = HEADSIZE;
-	m_uiMinPacketSize = HEADSIZE;
-	m_uiMaxPacketSize = HEADSIZE * 2048;
 	m_lsnSocket = -1;
 
 	m_pIOQueue = NULL;
@@ -56,6 +53,7 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 
 	m_pIOQueue = new OverLap[pBaseConfig->m_uiConcurrentNum];
 	m_szpPackMem = new char [pBaseConfig->m_uiConcurrentNum * pBaseConfig->m_uiMaxPacketSize];
+	m_pEpollEvs = new struct epoll_event[pBaseConfig->m_uiConcurrentNum];
 
 	if(m_pIOQueue == NULL || m_szpPackMem == NULL)
 	{
@@ -148,6 +146,29 @@ void* LcEpollNet::Thread_NetServ(void* param)
 {
 	LcEpollNet* pNet = (LcEpollNet*)param;
 
+	sockaddr_in cliSockAddr;
+	socklen_t addrLen = sizeof(sockaddr);
 
+	int nfds = epoll_wait(pNet->m_epSocket, pNet->m_pEpollEvs, pNet->m_pBaseConfig->m_uiConcurrentNum, -1);
+	if(nfds < 0)
+	{
+		pNet->m_txlNetLog->Write("epoll_wait error!");
+		return NULL;
+	}
+
+	for(int i = 0; i < nfds; i++)
+	{
+		if(pNet->m_pEpollEvs[i].data.fd == pNet->m_lsnSocket)
+		{
+			int fd = accept(pNet->m_lsnSocket, (sockaddr*)&cliSockAddr, &addrLen);
+			if(fd == -1)
+			{
+				pNet->m_txlNetLog->Write("accept from %s:%u error", inet_ntoa(cliSockAddr.sin_addr), ntohs(cliSockAddr.sin_port));
+				continue;
+			}
+
+			pNet->m_txlNetLog->Write("accept from %s:%u success", inet_ntoa(cliSockAddr.sin_addr), ntohs(cliSockAddr.sin_port));
+		}
+	}
 	return NULL;
 }

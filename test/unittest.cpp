@@ -3,6 +3,9 @@
 #include "../servconfig.h"
 #include "../common/log/TextLog.h"
 
+
+pthread_mutex_t deadlock = PTHREAD_MUTEX_INITIALIZER;
+
 int main(int argc, char** argv)
 {
 	LogConfig logCfg;
@@ -16,6 +19,11 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	log.Write("Hello World");
+	LcAbstractNet* pServNet = new LcEpollNet();
+	pServNet->Init(&servCfg, log);
+	pServNet->StartThread();
+
+	pthread_mutex_lock(&deadlock);
+	pthread_mutex_lock(&deadlock);
 	return 0;
 }
