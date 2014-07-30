@@ -6,7 +6,7 @@ LogModPath = $(CommonPath)/log
 NetWorkModPath = $(CommonPath)/network
 TimeModPath = $(CommonPath)/time
 
-NetworkUtils = $(NetWorkModPath)/epollnet.o
+NetworkUtils = $(NetWorkModPath)/epollnet.o $(NetWorkModPath)/netqueue.o
 IOUtils = $(IOModPath)/FileUtil.o
 
 COMS = $(NetworkUtils) $(IOUtils)
