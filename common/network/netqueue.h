@@ -13,10 +13,7 @@ public:
 	int Init(const unsigned int& uiMaxLen);
 	void Push(const unsigned long long& ptr);
 	void Pop(unsigned long long& ptr);
-	inline unsigned int DataCountNeedHandle()
-	{
-		return 
-	}
+	unsigned int DataCountNeedHandle();
 
 private:
 	unsigned int m_uiPrevPos;
