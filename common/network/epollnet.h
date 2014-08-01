@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include "netcommon.h"
+#include "netqueue.h"
 
 class LcEpollNet : public LcAbstractNet
 {
@@ -10,7 +11,6 @@ public:
 	LcEpollNet();
 	virtual ~LcEpollNet();
 	int Init(BaseConfig* pBaseConfig, TextLog& textLog);
-	int InitDefault();
 	int StartThread();
 	
 protected:
@@ -22,8 +22,11 @@ private:
 	struct epoll_event *m_pEpollEvs;
 	char* m_szpPackMem;
 	BaseConfig* m_pBaseConfig;	
+	NetQueue m_IONetMemQue;
+	NetQueue m_IONetWorkQue;
 
 	static void* Thread_NetServ(void* param);
+	int EpollAccept(const int& fd, const unsigned int& uiPeerIP, const unsigned short& usPeerPort);
 };
 
 #endif

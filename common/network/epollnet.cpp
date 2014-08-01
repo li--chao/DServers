@@ -51,8 +51,8 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 		return -1;
 	}
 
-	m_pIOQueue = new OverLap[pBaseConfig->m_uiConcurrentNum];
-	m_szpPackMem = new char [pBaseConfig->m_uiConcurrentNum * pBaseConfig->m_uiMaxPacketSize];
+	m_pIOQueue = new OverLap[pBaseConfig->m_uiMaxOverLapNum];
+	m_szpPackMem = new char [pBaseConfig->m_uiMaxOverLapNum * pBaseConfig->m_uiMaxPacketSize];
 	m_pEpollEvs = new struct epoll_event[pBaseConfig->m_uiConcurrentNum];
 
 	if(m_pIOQueue == NULL || m_szpPackMem == NULL)
@@ -61,9 +61,22 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 		return -1;
 	}
 
-	for(int i = 0; i < (int)pBaseConfig->m_uiConcurrentNum; i++)
+	if(m_IONetMemQue.Init(pBaseConfig->m_uiMaxOverLapNum, pBaseConfig->m_uiMaxOverLapNum))
+	{
+		m_txlNetLog->Write("io memory queue init error");
+		return -1;
+	}
+
+	if(m_IONetWorkQue.Init(pBaseConfig->m_uiMaxOverLapNum, 0))
+	{
+		m_txlNetLog->Write("io work queue init error");
+		return -1;
+	}
+
+	for(int i = 0; i < (int)pBaseConfig->m_uiMaxOverLapNum; i++)
 	{
 		m_pIOQueue[i].szpComBuf = m_szpPackMem + (i * MAX_PACKET_SIZE);
+		m_IONetMemQue.Push((long)&m_pIOQueue[i]);
 	}
 
 	if(BindAndLsn(pBaseConfig->m_iBackLog, pBaseConfig->m_usServPort))
@@ -91,7 +104,7 @@ int LcEpollNet::BindAndLsn(const int& iBackLog, const unsigned short& usPort)
 	struct epoll_event ev;
 	ev.events = EPOLLIN;
 	ev.data.fd = m_lsnSocket;
-	if(epoll_ctl(m_epSocket, EPOLL_CTL_ADD, m_lsnSocket, &ev))
+	 if(epoll_ctl(m_epSocket, EPOLL_CTL_ADD, m_lsnSocket, &ev) == -1)
 	{
 		m_txlNetLog->Write("epoll_ctl add lsnSocket error!");
 		return -1;
@@ -124,24 +137,6 @@ int LcEpollNet::StartThread()
 	return 0;
 }
 
-int LcEpollNet::InitDefault()
-{
-	m_pIOQueue = new OverLap[10240];
-	m_szpPackMem = new char [10240 * 8192];
-
-	if(m_pIOQueue == NULL || m_szpPackMem == NULL)
-	{
-		std::cout << "epoll init error, no enough memory." << std::endl;
-		return -1;
-	}
-
-	for(int i = 0; i < 10240; i++)
-	{
-		m_pIOQueue[i].szpComBuf = m_szpPackMem + (i * MAX_PACKET_SIZE);
-	}
-	return 0;
-}
-
 void* LcEpollNet::Thread_NetServ(void* param)
 {
 	LcEpollNet* pNet = (LcEpollNet*)param;
@@ -167,8 +162,31 @@ void* LcEpollNet::Thread_NetServ(void* param)
 				continue;
 			}
 
+			if(FileUtil::SetNoBlock(fd))
+			{
+				close(fd);
+				pNet->m_txlNetLog->Write("peer(%s:%u, fd: %u) set no block error", inet_ntoa(cliSockAddr.sin_addr), ntohs(cliSockAddr.sin_port), fd);
+				continue;
+			}
+
 			pNet->m_txlNetLog->Write("accept from %s:%u success", inet_ntoa(cliSockAddr.sin_addr), ntohs(cliSockAddr.sin_port));
+			pNet->EpollAccept(fd, cliSockAddr.sin_addr.s_addr, cliSockAddr.sin_port);		
 		}
 	}
 	return NULL;
+}
+
+int LcEpollNet::EpollAccept(const int& fd, const unsigned int& uiPeerIP, const unsigned short& usPeerPort)
+{
+	long ptr = 0;
+	m_IONetMemQue.Pop(ptr);
+	OverLap* pOverLap = (OverLap*)ptr;
+
+	pOverLap->uiPeerIP = uiPeerIP;
+	pOverLap->usPeerPort = usPeerPort;
+	pOverLap->fd = fd;
+	pOverLap->u64LastRecvPack = time(0);
+
+
+	return 0;
 }

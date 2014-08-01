@@ -15,6 +15,7 @@ public:
 	unsigned int m_uiMaxPacketSize;
 	unsigned int m_uiConcurrentNum;
 	unsigned int m_uiHeadPacketSize;
+	unsigned int m_uiMaxOverLapNum;
 	int m_iBackLog;
 };
 

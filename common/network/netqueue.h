@@ -10,9 +10,9 @@ class NetQueue
 public:
 	NetQueue();
 	virtual ~NetQueue();
-	int Init(const unsigned int& uiMaxLen);
-	void Push(const unsigned long long& ptr);
-	void Pop(unsigned long long& ptr);
+	int Init(const unsigned int& uiMaxLen, const unsigned int& uiInitSemVal);
+	void Push(const long& ptr);
+	void Pop(long& ptr);
 	unsigned int DataCountNeedHandle();
 
 private:
@@ -20,8 +20,10 @@ private:
 	unsigned int m_uiAftPos;
 	unsigned int m_uiMaxQueLen;
 	pthread_mutex_t m_mutex;
-	sem_t m_sem;
-	unsigned long long* m_pu64ArrData;
+	sem_t m_OutSem;
+	sem_t m_InSem;
+	long* m_ppArrData;
+	unsigned int m_uiArrDataNum;
 };
 
 

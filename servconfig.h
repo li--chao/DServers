@@ -12,6 +12,7 @@
 #define DEFAULT_LOG_NAME "UnitTest"
 #define DEFAULT_FILE_PATH_NAME "./logs/"
 #define DEFAULT_BACK_LOG 20
+#define DEFAULT_MAX_OVERLAP_NUM 10240
 
 class ServConfig : public BaseConfig
 {
