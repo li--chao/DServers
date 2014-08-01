@@ -14,6 +14,13 @@ public:
 	void Push(const long& ptr);
 	void Pop(long& ptr);
 	unsigned int DataCountNeedHandle();
+	unsigned int DataNum()
+	{
+		pthread_mutex_lock(&m_mutex);
+		unsigned int num = m_uiArrDataNum;
+		pthread_mutex_unlock(&m_mutex);
+		return num;
+	}
 
 private:
 	unsigned int m_uiPrevPos;
