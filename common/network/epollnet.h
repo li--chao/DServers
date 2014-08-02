@@ -26,7 +26,8 @@ private:
 	NetQueue m_IONetWorkQue;
 
 	static void* Thread_NetServ(void* param);
-	int EpollAccept(const int& fd, const unsigned int& uiPeerIP, const unsigned short& usPeerPort);
+	void EpollAccept(const int& fd, const unsigned int& uiPeerIP, const unsigned short& usPeerPort);
+	void EpollRecv(OverLap* pOverLap);
 };
 
 #endif

@@ -144,39 +144,53 @@ void* LcEpollNet::Thread_NetServ(void* param)
 	sockaddr_in cliSockAddr;
 	socklen_t addrLen = sizeof(sockaddr);
 
-	int nfds = epoll_wait(pNet->m_epSocket, pNet->m_pEpollEvs, pNet->m_pBaseConfig->m_uiConcurrentNum, -1);
-	if(nfds < 0)
+	while(1)
 	{
-		pNet->m_txlNetLog->Write("epoll_wait error!");
-		return NULL;
-	}
-
-	for(int i = 0; i < nfds; i++)
-	{
-		if(pNet->m_pEpollEvs[i].data.fd == pNet->m_lsnSocket)
+		int nfds = epoll_wait(pNet->m_epSocket, pNet->m_pEpollEvs, pNet->m_pBaseConfig->m_uiConcurrentNum, -1);
+		if(nfds < 0 && errno == EINTR)
 		{
-			int fd = accept(pNet->m_lsnSocket, (sockaddr*)&cliSockAddr, &addrLen);
-			if(fd == -1)
-			{
-				pNet->m_txlNetLog->Write("accept from %s:%u error", inet_ntoa(cliSockAddr.sin_addr), ntohs(cliSockAddr.sin_port));
-				continue;
-			}
+			continue;
+		}
+		else if(nfds < 0)
+		{
+			pNet->m_txlNetLog->Write("epoll_wait error!");
+			return NULL;
+		}
 
-			if(FileUtil::SetNoBlock(fd))
+		for(int i = 0; i < nfds; i++)
+		{
+			if(pNet->m_pEpollEvs[i].data.fd == pNet->m_lsnSocket)
 			{
-				close(fd);
-				pNet->m_txlNetLog->Write("peer(%s:%u, fd: %u) set no block error", inet_ntoa(cliSockAddr.sin_addr), ntohs(cliSockAddr.sin_port), fd);
-				continue;
-			}
+				int fd = accept(pNet->m_lsnSocket, (sockaddr*)&cliSockAddr, &addrLen);
+				if(fd == -1)
+				{
+					pNet->m_txlNetLog->Write("accept from %s:%u error", inet_ntoa(cliSockAddr.sin_addr), ntohs(cliSockAddr.sin_port));
+					continue;
+				}
 
-			pNet->m_txlNetLog->Write("accept from %s:%u success", inet_ntoa(cliSockAddr.sin_addr), ntohs(cliSockAddr.sin_port));
-			pNet->EpollAccept(fd, cliSockAddr.sin_addr.s_addr, cliSockAddr.sin_port);		
+				if(FileUtil::SetNoBlock(fd))
+				{
+					close(fd);
+					pNet->m_txlNetLog->Write("peer(%s:%u, fd: %u) set no block error", inet_ntoa(cliSockAddr.sin_addr), ntohs(cliSockAddr.sin_port), fd);
+					continue;
+				}
+
+				pNet->m_txlNetLog->Write("accept from %s:%u success", inet_ntoa(cliSockAddr.sin_addr), ntohs(cliSockAddr.sin_port));
+				pNet->EpollAccept(fd, cliSockAddr.sin_addr.s_addr, cliSockAddr.sin_port);
+			}
+			else if(pNet->m_pEpollEvs[i].events & EPOLLIN)
+			{
+				pNet->EpollRecv((OverLap*)pNet->m_pEpollEvs[i].data.ptr);
+			}
+		
 		}
 	}
+
+	pNet->m_txlNetLog->Write("thread is going to be over");
 	return NULL;
 }
 
-int LcEpollNet::EpollAccept(const int& fd, const unsigned int& uiPeerIP, const unsigned short& usPeerPort)
+void LcEpollNet::EpollAccept(const int& fd, const unsigned int& uiPeerIP, const unsigned short& usPeerPort)
 {
 	long ptr = 0;
 	m_IONetMemQue.Pop(ptr);
@@ -187,6 +201,53 @@ int LcEpollNet::EpollAccept(const int& fd, const unsigned int& uiPeerIP, const u
 	pOverLap->fd = fd;
 	pOverLap->u64LastRecvPack = time(0);
 
+	struct epoll_event ev;
+	ev.events = EPOLLIN | EPOLLET;
+	ev.data.ptr = (void*)pOverLap;
 
-	return 0;
+	if(epoll_ctl(m_epSocket, EPOLL_CTL_ADD, fd, &ev) == -1)
+	{
+		m_IONetMemQue.Push(ptr);
+		close(fd);
+		char szaPeerIP[20];
+		sprintf(szaPeerIP, "%u.%u.%u.%u", *((unsigned char*)&uiPeerIP), *((unsigned char*)&uiPeerIP + 1), *((unsigned char*)&uiPeerIP + 2), *((unsigned char*)&uiPeerIP + 3));
+		m_txlNetLog->Write("add Peer(%s:%u) to epoll error", szaPeerIP, usPeerPort);
+	}
+}
+
+void LcEpollNet::EpollRecv(OverLap* pOverLap)
+{
+	int ret = 0;
+
+	while(1)
+	{
+		ret = recv(pOverLap->fd, pOverLap->szpComBuf + pOverLap->uiFinishLen, pOverLap->uiComLen, 0);
+		if(ret == 0 || ret > (int)pOverLap->uiComLen)
+		{
+			// to do remove connection
+			break;
+		}
+		else if(ret == -1 && errno == EAGAIN)
+		{
+			// no data
+			break;
+		}
+		else if(ret == -1)
+		{
+			// error when recv data
+			break;
+		}
+
+		m_txlNetLog->Write("got data");		
+	}
+	struct epoll_event ev;
+	ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
+	ev.data.ptr = (void*)pOverLap;
+	if(epoll_ctl(m_epSocket, EPOLL_CTL_MOD, pOverLap->fd, &ev) == -1)
+	{
+		m_txlNetLog->Write("epoll_ctl_mode error when recv data, close peer");
+		m_IONetMemQue.Push((long)pOverLap);
+		epoll_ctl(m_epSocket, EPOLL_CTL_DEL, pOverLap->fd, &ev);
+		close(pOverLap->fd);
+	}
 }

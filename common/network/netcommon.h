@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <errno.h>
 #include "../log/TextLog.h"
 #include "../packet.h"
 #include "../baseconfig.h"

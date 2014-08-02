@@ -22,7 +22,10 @@ int main(int argc, char** argv)
 	log.Write("HELLO WORLD");
 	LcAbstractNet* pServNet = new LcEpollNet();
 	pServNet->Init(&servCfg, log);
+
+	daemon(1, 0);
 	pServNet->StartThread();
+
 
 	pthread_mutex_lock(&deadlock);
 	pthread_mutex_lock(&deadlock);
