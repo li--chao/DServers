@@ -15,6 +15,11 @@ public:
 	
 protected:
 	int BindAndLsn(const int& iBackLog, const unsigned short& usPort);
+	inline void IP2Str(const unsigned int& uiPeerIP, char* szpIP)
+	{
+		unsigned char* p = (unsigned char*)&uiPeerIP;
+		sprintf(szpIP, "%u.%u.%u.%u", *p, *(p + 1), *(p + 2), *(p + 3));
+	}
 
 private:
 	OverLap* m_pIOQueue;

@@ -218,6 +218,8 @@ void LcEpollNet::EpollAccept(const int& fd, const unsigned int& uiPeerIP, const 
 void LcEpollNet::EpollRecv(OverLap* pOverLap)
 {
 	int ret = 0;
+	char szaPeerIP[20];
+	IP2Str(pOverLap->uiPeerIP, szaPeerIP);
 
 	while(1)
 	{
@@ -238,14 +240,14 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 			break;
 		}
 
-		m_txlNetLog->Write("got data");		
+		m_txlNetLog->Write("got data from peer(%s:%u)", szaPeerIP, ntohs(pOverLap->usPeerPort));
 	}
 	struct epoll_event ev;
 	ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
 	ev.data.ptr = (void*)pOverLap;
 	if(epoll_ctl(m_epSocket, EPOLL_CTL_MOD, pOverLap->fd, &ev) == -1)
 	{
-		m_txlNetLog->Write("epoll_ctl_mode error when recv data, close peer");
+		m_txlNetLog->Write("epoll_ctl_mode error when recv data, close peer(%s:%u)", szaPeerIP, ntohs(pOverLap->usPeerPort));
 		m_IONetMemQue.Push((long)pOverLap);
 		epoll_ctl(m_epSocket, EPOLL_CTL_DEL, pOverLap->fd, &ev);
 		close(pOverLap->fd);
