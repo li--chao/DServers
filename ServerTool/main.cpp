@@ -18,17 +18,19 @@ pthread_mutex_t deadlock;
 int main(int argc, char** argv)
 {
 	pthread_mutex_init(&deadlock, NULL);
-	int sock = socket(AF_INET, SOCK_STREAM, 0);
 	sockaddr_in servAddr;
 	unsigned int uiSocketLen = sizeof(servAddr);
 	servAddr.sin_family = AF_INET;
 	servAddr.sin_addr.s_addr = inet_addr(TARGET_IP);
 	servAddr.sin_port = htons(TARGET_PORT);
 
+	int idx = 1;
 	while(1)
 	{
+		int sock = socket(AF_INET, SOCK_STREAM, 0);
 		int ret = connect(sock, (sockaddr*)&servAddr, uiSocketLen);
-		printf("connect ret = %d errno = %s(%d)\n", ret, strerror(errno), errno);
+		printf("*%d) connect ret = %d errno = %s(%d)\n", idx++, ret, strerror(errno), errno);
+		
 		sleep(2);
 	}
 

@@ -227,7 +227,13 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 		if(ret == 0 || ret > (int)pOverLap->uiComLen)
 		{
 			// to do remove connection
-			break;
+			struct epoll_event ev;
+			m_IONetMemQue.Push((long)pOverLap);
+			close(pOverLap->fd);
+			epoll_ctl(m_epSocket, EPOLL_CTL_DEL, pOverLap->fd, &ev);
+			pOverLap->fd = -1;
+			m_txlNetLog->Write("peer(%s:%u) close", szaPeerIP, ntohs(pOverLap->usPeerPort));
+			return;
 		}
 		else if(ret == -1 && errno == EAGAIN)
 		{
@@ -247,9 +253,10 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 	ev.data.ptr = (void*)pOverLap;
 	if(epoll_ctl(m_epSocket, EPOLL_CTL_MOD, pOverLap->fd, &ev) == -1)
 	{
-		m_txlNetLog->Write("epoll_ctl_mode error when recv data, close peer(%s:%u)", szaPeerIP, ntohs(pOverLap->usPeerPort));
+		m_txlNetLog->Write("epoll_ctl_mod error when recv data, close peer(%s:%u)", szaPeerIP, ntohs(pOverLap->usPeerPort));
 		m_IONetMemQue.Push((long)pOverLap);
-		epoll_ctl(m_epSocket, EPOLL_CTL_DEL, pOverLap->fd, &ev);
 		close(pOverLap->fd);
+		epoll_ctl(m_epSocket, EPOLL_CTL_DEL, pOverLap->fd, &ev);
+		pOverLap->fd = -1;
 	}
 }
