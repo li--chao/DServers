@@ -87,6 +87,16 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 	return 0;
 }
 
+void LcEpollNet::RemoveConnect(OverLap* pOverLap)
+{
+	struct epoll_event ev;
+	m_IONetMemQue.Push((long)pOverLap);
+	epoll_ctl(m_epSocket, EPOLL_CTL_DEL, pOverLap->fd, &ev);
+	close(pOverLap->fd);
+	pOverLap->u64SessionID = 0;
+	pOverLap->fd = -1;
+}
+
 int LcEpollNet::BindAndLsn(const int& iBackLog, const unsigned short& usPort)
 {
 	sockaddr_in svrSockAddr;
@@ -104,7 +114,7 @@ int LcEpollNet::BindAndLsn(const int& iBackLog, const unsigned short& usPort)
 	struct epoll_event ev;
 	ev.events = EPOLLIN;
 	ev.data.fd = m_lsnSocket;
-	 if(epoll_ctl(m_epSocket, EPOLL_CTL_ADD, m_lsnSocket, &ev) == -1)
+	if(epoll_ctl(m_epSocket, EPOLL_CTL_ADD, m_lsnSocket, &ev) == -1)
 	{
 		m_txlNetLog->Write("epoll_ctl add lsnSocket error!");
 		return -1;
@@ -182,7 +192,11 @@ void* LcEpollNet::Thread_NetServ(void* param)
 			{
 				pNet->EpollRecv((OverLap*)pNet->m_pEpollEvs[i].data.ptr);
 			}
-		
+			else if(pNet->m_pEpollEvs[i].events & EPOLLOUT)
+			{
+				
+				continue;
+			}
 		}
 	}
 
@@ -247,6 +261,7 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 		}
 
 		m_txlNetLog->Write("got data from peer(%s:%u)", szaPeerIP, ntohs(pOverLap->usPeerPort));
+		pOverLap->uiComLen = ret;
 	}
 	struct epoll_event ev;
 	ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
@@ -254,9 +269,6 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 	if(epoll_ctl(m_epSocket, EPOLL_CTL_MOD, pOverLap->fd, &ev) == -1)
 	{
 		m_txlNetLog->Write("epoll_ctl_mod error when recv data, close peer(%s:%u)", szaPeerIP, ntohs(pOverLap->usPeerPort));
-		m_IONetMemQue.Push((long)pOverLap);
-		close(pOverLap->fd);
-		epoll_ctl(m_epSocket, EPOLL_CTL_DEL, pOverLap->fd, &ev);
-		pOverLap->fd = -1;
+		RemoveConnect(pOverLap);
 	}
 }

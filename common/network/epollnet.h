@@ -12,6 +12,7 @@ public:
 	virtual ~LcEpollNet();
 	int Init(BaseConfig* pBaseConfig, TextLog& textLog);
 	int StartThread();
+	void RemoveConnect(OverLap* pOverLap);
 	
 protected:
 	int BindAndLsn(const int& iBackLog, const unsigned short& usPort);

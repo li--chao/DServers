@@ -44,6 +44,7 @@ class LcAbstractNet
 public:
 	virtual int Init(BaseConfig* pBaseConfig, TextLog& textLog) = 0;
 	virtual int StartThread() = 0;
+	virtual void RemoveConnect(OverLap* pOverLap) = 0;
 
 protected:
 	int m_lsnSocket;
