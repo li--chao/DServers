@@ -34,6 +34,7 @@ private:
 	static void* Thread_NetServ(void* param);
 	void EpollAccept(const int& fd, const unsigned int& uiPeerIP, const unsigned short& usPeerPort);
 	void EpollRecv(OverLap* pOverLap);
+	void EpollSend(OverLap* pOverLap);
 };
 
 #endif
