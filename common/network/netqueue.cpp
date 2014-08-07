@@ -17,7 +17,7 @@ NetQueue::~NetQueue()
 
 }
 
-int NetQueue::Init(const unsigned int& uiMaxLen, const unsigned int& uiInitSemVal)
+int NetQueue::Init(const unsigned int& uiMaxLen)
 {
 	m_ppArrData = new long [uiMaxLen];
 	if(m_ppArrData == NULL)
@@ -30,7 +30,7 @@ int NetQueue::Init(const unsigned int& uiMaxLen, const unsigned int& uiInitSemVa
 		return -2;
 	}
 	m_uiMaxQueLen = uiMaxLen;
-	sem_init(&m_InSem, 0, uiInitSemVal);
+	sem_init(&m_InSem, 0, uiMaxLen);
 	sem_init(&m_OutSem, 0, 0);
 	return 0;
 }

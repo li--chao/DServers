@@ -18,19 +18,19 @@ struct OverLap
 	OverLap()
 	{
 		u64SessionID = 0;
-		pNext = 0;
-		szpComBuf = 0;
 		fd = -1;
 		uiComLen = MAX_PACKET_SIZE;
 		uiFinishLen = 0;
 		uiPeerIP = 0;
 		usPeerPort = 0;
 		u64LastRecvPack = 0ULL;
+		szpRecvComBuf = NULL;
+		szpSndComBuf = NULL;
 	}
 
 	unsigned long long u64SessionID;
-	OverLap* pNext;
-	char* szpComBuf;
+	char* szpRecvComBuf;
+	char* szpSndComBuf;
 	int fd;
 	unsigned int uiComLen;
 	unsigned int uiFinishLen;
@@ -45,6 +45,8 @@ public:
 	virtual int Init(BaseConfig* pBaseConfig, TextLog& textLog) = 0;
 	virtual int StartThread() = 0;
 	virtual void RemoveConnect(OverLap* pOverLap) = 0;
+	virtual void GetRequest(long& lptr) = 0;
+	virtual void SendData(const long& lptr) = 0;
 
 protected:
 	int m_lsnSocket;

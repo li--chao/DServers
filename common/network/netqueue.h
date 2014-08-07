@@ -10,7 +10,7 @@ class NetQueue
 public:
 	NetQueue();
 	virtual ~NetQueue();
-	int Init(const unsigned int& uiMaxLen, const unsigned int& uiInitSemVal);
+	int Init(const unsigned int& uiMaxLen);
 	void Push(const long& ptr);
 	void Pop(long& ptr);
 	unsigned int DataCountNeedHandle();

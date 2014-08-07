@@ -1,3 +1,4 @@
+#include <string.h>
 #include "epollnet.h"
 #include "../baseconfig.h"
 #include "../io/FileUtil.h"
@@ -9,7 +10,8 @@ LcEpollNet::LcEpollNet()
 	m_pIOQueue = NULL;
 	m_epSocket = -1;
 	m_pEpollEvs = NULL;
-	m_szpPackMem = NULL;
+	m_szpRecvPackMem = NULL;
+	m_szpSndPackMem = NULL;
 }
 
 LcEpollNet::~LcEpollNet()
@@ -52,22 +54,23 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 	}
 
 	m_pIOQueue = new OverLap[pBaseConfig->m_uiMaxOverLapNum];
-	m_szpPackMem = new char [pBaseConfig->m_uiMaxOverLapNum * pBaseConfig->m_uiMaxPacketSize];
+	m_szpRecvPackMem = new char [pBaseConfig->m_uiMaxOverLapNum * pBaseConfig->m_uiMaxPacketSize];
+	m_szpSndPackMem = new char [pBaseConfig->m_uiMaxOverLapNum * pBaseConfig->m_uiMaxPacketSize];
 	m_pEpollEvs = new struct epoll_event[pBaseConfig->m_uiConcurrentNum];
 
-	if(m_pIOQueue == NULL || m_szpPackMem == NULL)
+	if(m_pIOQueue == NULL || m_szpRecvPackMem == NULL || m_szpSndPackMem == NULL)
 	{
 		m_txlNetLog->Write("no enough memory for server!");
 		return -1;
 	}
 
-	if(m_IONetMemQue.Init(pBaseConfig->m_uiMaxOverLapNum, pBaseConfig->m_uiMaxOverLapNum))
+	if(m_IONetMemQue.Init(pBaseConfig->m_uiMaxOverLapNum))
 	{
 		m_txlNetLog->Write("io memory queue init error");
 		return -1;
 	}
 
-	if(m_IONetWorkQue.Init(pBaseConfig->m_uiMaxOverLapNum, 0))
+	if(m_IONetWorkQue.Init(pBaseConfig->m_uiMaxOverLapNum))
 	{
 		m_txlNetLog->Write("io work queue init error");
 		return -1;
@@ -75,7 +78,8 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 
 	for(int i = 0; i < (int)pBaseConfig->m_uiMaxOverLapNum; i++)
 	{
-		m_pIOQueue[i].szpComBuf = m_szpPackMem + (i * MAX_PACKET_SIZE);
+		m_pIOQueue[i].szpRecvComBuf = m_szpRecvPackMem + (i * MAX_PACKET_SIZE);
+		m_pIOQueue[i].szpSndComBuf = m_szpSndPackMem + (i * MAX_PACKET_SIZE);
 		m_IONetMemQue.Push((long)&m_pIOQueue[i]);
 	}
 
@@ -97,6 +101,24 @@ void LcEpollNet::RemoveConnect(OverLap* pOverLap)
 	pOverLap->fd = -1;
 }
 
+void LcEpollNet::GetRequest(long& lptr)
+{
+	m_IONetWorkQue.Pop(lptr);
+}
+
+void LcEpollNet::SendData(const long& lptr)
+{
+	OverLap* pOverLap = (OverLap*)lptr;
+	struct epoll_event ev;
+	ev.events = EPOLLOUT;
+	ev.data.ptr = (void*)pOverLap;
+	if(epoll_ctl(m_epSocket, EPOLL_CTL_MOD, pOverLap->fd, &ev) == -1)
+	{
+		m_txlNetLog->Write("SendData Error");
+		RemoveConnect(pOverLap);
+	}
+}
+
 int LcEpollNet::BindAndLsn(const int& iBackLog, const unsigned short& usPort)
 {
 	sockaddr_in svrSockAddr;
@@ -104,7 +126,7 @@ int LcEpollNet::BindAndLsn(const int& iBackLog, const unsigned short& usPort)
 	svrSockAddr.sin_port = htons(usPort);
 	svrSockAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-	m_epSocket = epoll_create(16);
+	m_epSocket = epoll_create(64);
 	if(m_epSocket == -1)
 	{
 		m_txlNetLog->Write("epoll_create error!");
@@ -194,8 +216,7 @@ void* LcEpollNet::Thread_NetServ(void* param)
 			}
 			else if(pNet->m_pEpollEvs[i].events & EPOLLOUT)
 			{
-				
-				continue;
+				pNet->EpollSend((OverLap*)pNet->m_pEpollEvs[i].data.ptr);	
 			}
 		}
 	}
@@ -210,6 +231,8 @@ void LcEpollNet::EpollAccept(const int& fd, const unsigned int& uiPeerIP, const 
 	m_IONetMemQue.Pop(ptr);
 	OverLap* pOverLap = (OverLap*)ptr;
 
+	pOverLap->uiComLen = m_pBaseConfig->m_uiMaxPacketSize;
+	pOverLap->uiFinishLen = 0;
 	pOverLap->uiPeerIP = uiPeerIP;
 	pOverLap->usPeerPort = usPeerPort;
 	pOverLap->fd = fd;
@@ -237,15 +260,16 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 
 	while(1)
 	{
-		ret = recv(pOverLap->fd, pOverLap->szpComBuf + pOverLap->uiFinishLen, pOverLap->uiComLen, 0);
+		ret = recv(pOverLap->fd, pOverLap->szpRecvComBuf + pOverLap->uiFinishLen, pOverLap->uiComLen, 0);
 		if(ret == 0 || ret > (int)pOverLap->uiComLen)
 		{
 			// to do remove connection
-			struct epoll_event ev;
-			m_IONetMemQue.Push((long)pOverLap);
-			close(pOverLap->fd);
-			epoll_ctl(m_epSocket, EPOLL_CTL_DEL, pOverLap->fd, &ev);
-			pOverLap->fd = -1;
+//			struct epoll_event ev;
+//			m_IONetMemQue.Push((long)pOverLap);
+//			close(pOverLap->fd);
+//			epoll_ctl(m_epSocket, EPOLL_CTL_DEL, pOverLap->fd, &ev);
+//			pOverLap->fd = -1;
+			RemoveConnect(pOverLap);
 			m_txlNetLog->Write("peer(%s:%u) close", szaPeerIP, ntohs(pOverLap->usPeerPort));
 			return;
 		}
@@ -260,9 +284,12 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 			break;
 		}
 
-		m_txlNetLog->Write("got data from peer(%s:%u)", szaPeerIP, ntohs(pOverLap->usPeerPort));
-		pOverLap->uiComLen = ret;
+		m_txlNetLog->Write("got data(%d byte) from peer(%s:%u)", ret, szaPeerIP, ntohs(pOverLap->usPeerPort));
+//		pOverLap->uiComLen = ret;
 	}
+
+	m_IONetWorkQue.Push((long)pOverLap);
+/**
 	struct epoll_event ev;
 	ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
 	ev.data.ptr = (void*)pOverLap;
@@ -271,12 +298,26 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 		m_txlNetLog->Write("epoll_ctl_mod error when recv data, close peer(%s:%u)", szaPeerIP, ntohs(pOverLap->usPeerPort));
 		RemoveConnect(pOverLap);
 	}
+**/
 }
 
 void LcEpollNet::EpollSend(OverLap* pOverLap)
 {
-
-
-
-
+	while(1)
+	{
+		int ret = send(pOverLap->fd, pOverLap->szpSndComBuf, pOverLap->uiComLen, MSG_NOSIGNAL);
+		m_txlNetLog->Write("send ret(%d), %s(%d)", ret, strerror(errno), errno);
+		if(ret == -1 && errno == EAGAIN)
+			continue;
+		else
+			break;
+	}
+	struct epoll_event ev;
+	ev.events = EPOLLIN | EPOLLET;
+	ev.data.ptr = (void*)pOverLap;
+	if(epoll_ctl(m_epSocket, EPOLL_CTL_MOD, pOverLap->fd, &ev) == -1)
+	{
+		m_txlNetLog->Write("EPOll_CTL_MOD error when EpollSend");
+		RemoveConnect(pOverLap);
+	}
 }
