@@ -6,6 +6,7 @@
 #define MIN_PACKET_SIZE 20
 #define IDENTIFY_CODE 0x00143B3B
 #define END_CODE 0x2B2B
+#define MEM_OFFSET_IN_CLASS(TYPE, MEMBER) ((size_t) & ((TYPE *)0)->MEMBER )
 
 #pragma pack(1)
 

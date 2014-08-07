@@ -8,6 +8,7 @@ pthread_mutex_t deadlock = PTHREAD_MUTEX_INITIALIZER;
 
 int main(int argc, char** argv)
 {
+/**
 	LogConfig logCfg;
 	ServConfig servCfg;
 	strcpy(logCfg.szpLogPath, servCfg.szpLogPath);
@@ -29,5 +30,8 @@ int main(int argc, char** argv)
 
 	pthread_mutex_lock(&deadlock);
 	pthread_mutex_lock(&deadlock);
+**/
+
+	std::cout << MEM_OFFSET_IN_CLASS(struct PacketHead, m_uiOperateCode) << std::endl;
 	return 0;
 }
