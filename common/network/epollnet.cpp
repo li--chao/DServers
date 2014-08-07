@@ -85,7 +85,6 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 
 	if(BindAndLsn(pBaseConfig->m_iBackLog, pBaseConfig->m_usServPort))
 	{
-		m_txlNetLog->Write("Bind Socket error!");
 		return -1;
 	}
 	return 0;
