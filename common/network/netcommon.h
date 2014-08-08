@@ -21,6 +21,8 @@ struct OverLap
 		fd = -1;
 		uiComLen = MAX_PACKET_SIZE;
 		uiFinishLen = 0;
+		uiSndComLen = 0;
+		uiSndFinishLen = 0;
 		uiPeerIP = 0;
 		usPeerPort = 0;
 		u64LastRecvPack = 0ULL;
@@ -34,6 +36,8 @@ struct OverLap
 	int fd;
 	unsigned int uiComLen;
 	unsigned int uiFinishLen;
+	unsigned int uiSndComLen;
+	unsigned int uiSndFinishLen;
 	unsigned int uiPeerIP;
 	unsigned short usPeerPort;
 	unsigned long long u64LastRecvPack;
