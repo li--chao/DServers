@@ -13,7 +13,6 @@ LcFullPktChecker::~LcFullPktChecker()
 
 }
 
-
 int LcFullPktChecker::CheckPacketHead(OverLap* pOverLap, const unsigned int& uiHeadSize)
 {
 	if(pOverLap->uiFinishLen < uiHeadSize)

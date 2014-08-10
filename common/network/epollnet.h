@@ -4,6 +4,7 @@
 #include <iostream>
 #include "netcommon.h"
 #include "netqueue.h"
+#include "lcfullpktchecker.h"
 
 class LcEpollNet : public LcAbstractNet
 {
@@ -34,6 +35,7 @@ private:
 	NetQueue m_IONetMemQue;
 	NetQueue m_IONetWorkQue;
 //	NetQueue m_IONetSndQue;
+	LcBaseChecker* m_pChecker;
 
 	static void* Thread_NetServ(void* param);
 	void EpollAccept(const int& fd, const unsigned int& uiPeerIP, const unsigned short& usPeerPort);

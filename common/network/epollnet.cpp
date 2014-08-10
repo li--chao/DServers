@@ -12,6 +12,7 @@ LcEpollNet::LcEpollNet()
 	m_pEpollEvs = NULL;
 	m_szpRecvPackMem = NULL;
 	m_szpSndPackMem = NULL;
+	m_pChecker = NULL;
 }
 
 LcEpollNet::~LcEpollNet()
@@ -57,8 +58,9 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 	m_szpRecvPackMem = new char [pBaseConfig->m_uiMaxOverLapNum * pBaseConfig->m_uiMaxPacketSize];
 	m_szpSndPackMem = new char [pBaseConfig->m_uiMaxOverLapNum * pBaseConfig->m_uiMaxPacketSize];
 	m_pEpollEvs = new struct epoll_event[pBaseConfig->m_uiConcurrentNum];
+	m_pChecker = new LcFullPktChecker();
 
-	if(m_pIOQueue == NULL || m_szpRecvPackMem == NULL || m_szpSndPackMem == NULL)
+	if(m_pIOQueue == NULL || m_szpRecvPackMem == NULL || m_szpSndPackMem == NULL || m_pChecker == NULL)
 	{
 		m_txlNetLog->Write("no enough memory for server!");
 		return -1;
@@ -256,6 +258,7 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 	int ret = 0;
 	char szaPeerIP[20];
 	IP2Str(pOverLap->uiPeerIP, szaPeerIP);
+	bool bIsHeadChked = false;
 
 	while(1)
 	{
@@ -275,11 +278,11 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 		{
 			// error when recv data
 			RemoveConnect(pOverLap);
-			m_txlNetLog->Write("recv data from peer(%s:%u) error", szaPeerIP, ntohs(pOverLap->usPeerPort));		// error when recv data
+			m_txlNetLog->Write("recv data from peer(%s:%u) error", szaPeerIP, ntohs(pOverLap->usPeerPort));
 			return;
 		}
 
-		m_txlNetLog->Write("got data(%d byte) from peer(%s:%u)", ret, szaPeerIP, ntohs(pOverLap->usPeerPort));
+//		m_txlNetLog->Write("got data(%d byte) from peer(%s:%u)", ret, szaPeerIP, ntohs(pOverLap->usPeerPort));
 		pOverLap->uiComLen -= ret;
 		pOverLap->uiFinishLen += ret;
 		// to do check the packet head info
