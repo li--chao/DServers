@@ -7,7 +7,7 @@ class LcBaseChecker
 {
 public:
 	virtual int CheckPacketHead(OverLap* pOverLap, const unsigned int& uiHeadSize) = 0;
-	virtual int CheckPacketEnd(OverLap* pOverLap) = 0;
+	virtual int CheckPacketEnd(OverLap* pOverLap, const unsigned int& uiHeadSize, const unsigned int& uiMaxPacketSize) = 0;
 
 };
 

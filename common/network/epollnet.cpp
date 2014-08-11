@@ -285,12 +285,22 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 //		m_txlNetLog->Write("got data(%d byte) from peer(%s:%u)", ret, szaPeerIP, ntohs(pOverLap->usPeerPort));
 		pOverLap->uiComLen -= ret;
 		pOverLap->uiFinishLen += ret;
-		// to do check the packet head info
+		int retChkHead = 0;
+		int retChkEnd = 0;
+		if(!bIsHeadChked)
+		{
+			retChkHead = m_pChecker->CheckPacketHead(pOverLap, m_pBaseConfig->m_uiHeadPacketSize);
+		}
+		else
+		{
+			retChkEnd = m_pChecker->CheckPacketEnd(pOverLap, m_pBaseConfig->m_uiHeadPacketSize, m_pBaseConfig->m_uiMaxPacketSize);
+		}
+		// next packet
 	}
 
 
 	//	to do check the endcode of the packet
-	m_IONetWorkQue.Push((long)pOverLap);
+//	m_IONetWorkQue.Push((long)pOverLap);
 }
 
 void LcEpollNet::EpollSend(OverLap* pOverLap)

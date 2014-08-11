@@ -9,7 +9,7 @@ public:
 	LcFullPktChecker();
 	virtual ~LcFullPktChecker();
 	int CheckPacketHead(OverLap* pOverLap, const unsigned int& uiHeadSize);
-	int CheckPacketEnd(OverLap* pOverLap);
+	int CheckPacketEnd(OverLap* pOverLap, const unsigned int& uiHeadSize, const unsigned int& uiMaxPacketSize);
 };
 
 
