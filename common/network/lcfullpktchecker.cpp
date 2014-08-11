@@ -42,6 +42,10 @@ int LcFullPktChecker::CheckPacketEnd(OverLap* pOverLap, const unsigned int& uiHe
 	}
 
 	pOverLap->uiFinishLen -= uiBodyLen;
-	pOverLap->uiComLen = uiMaxPacketSize - pOverLap->uiFinishLen;	
+	pOverLap->uiComLen = uiMaxPacketSize - pOverLap->uiFinishLen;
+	if(pOverLap->uiFinishLen > 0)
+	{
+		memcpy(pOverLap->szpRecvComBuf, pOverLap->szpRecvComBuf + uiBodyLen, pOverLap->uiFinishLen);
+	}
 	return 0;
 }

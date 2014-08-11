@@ -290,14 +290,34 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 		if(!bIsHeadChked)
 		{
 			retChkHead = m_pChecker->CheckPacketHead(pOverLap, m_pBaseConfig->m_uiHeadPacketSize);
+			switch(retChkHead)
+			{
+			case 2:	// 包头校验失败
+				// to do remove connect
+				return;
+			case 1:	//	读取的数据长度小于包头长度
+				continue;
+			case 0:	//	校验成功，顺带校验一下包尾
+				bIsHeadChked = true;
+				retChkEnd = m_pChecker->CheckPacketHead(pOverLap, m_pBaseConfig->m_uiHeadPacketSize, m_pBaseConfig->m_uiMaxPacketSize);
+				break;
+			}
 		}
 		else
 		{
 			retChkEnd = m_pChecker->CheckPacketEnd(pOverLap, m_pBaseConfig->m_uiHeadPacketSize, m_pBaseConfig->m_uiMaxPacketSize);
 		}
-		// next packet
-	}
 
+		switch(retChkEnd)
+		{
+		case 2: // 包尾校验失败
+			// to do remove connect
+			return;
+		case 1:	// 读取数据长度小于整个包的长度
+			continue;
+		case 0:	// 包尾校验成功
+		}
+	}
 
 	//	to do check the endcode of the packet
 //	m_IONetWorkQue.Push((long)pOverLap);
