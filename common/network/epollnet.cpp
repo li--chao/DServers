@@ -316,6 +316,7 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 		case 1:	// 读取数据长度小于整个包的长度
 			continue;
 		case 0:	// 包尾校验成功
+			// to do 移动内存，重新给重叠结构中的uiFinishLen和uiComLen重新赋值
 		}
 	}
 
