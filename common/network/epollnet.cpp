@@ -289,16 +289,20 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 		int retChkEnd = 0;
 		if(!bIsHeadChked)
 		{
+			m_txlNetLog->Write("get %d bytes data check head", ret);
 			retChkHead = m_pChecker->CheckPacketHead(pOverLap, m_pBaseConfig->m_uiHeadPacketSize);
 			switch(retChkHead)
 			{
 			case 2:	// 包头校验失败
 				// to do remove connect
+				m_txlNetLog->Write("check head error, connect will be closed.");
 				RemoveConnect(pOverLap);
 				return;
 			case 1:	//	读取的数据长度小于包头长度
+				m_txlNetLog->Write("%d bytes is not long enough to check head", ret);
 				continue;
 			case 0:	//	校验成功，顺带校验一下包尾
+				m_txlNetLog->Write("check head success, next check end");
 				bIsHeadChked = true;
 				retChkEnd = m_pChecker->CheckPacketEnd(pOverLap, m_pBaseConfig->m_uiHeadPacketSize, m_pBaseConfig->m_uiMaxPacketSize);
 				break;
@@ -306,21 +310,26 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 		}
 		else
 		{
+			m_txlNetLog->Write("check end");
 			retChkEnd = m_pChecker->CheckPacketEnd(pOverLap, m_pBaseConfig->m_uiHeadPacketSize, m_pBaseConfig->m_uiMaxPacketSize);
 		}
+
+		unsigned int uiPacketLen = *(unsigned int*)(pOverLap->szpRecvComBuf + sizeof(unsigned int) * 2);
 
 		switch(retChkEnd)
 		{
 		case 2: // 包尾校验失败
 			// to do remove connect
+			m_txlNetLog->Write("check end error, connect will be closed");
 			RemoveConnect(pOverLap);
 			return;
 		case 1:	// 读取数据长度小于整个包的长度
+			m_txlNetLog->Write("packet len: %d, read len: %d not long enough to check end", uiPacketLen, pOverLap->uiFinishLen);
 			continue;
 		case 0:	// 包尾校验成功
 			// to do 移动内存，重新给重叠结构中的uiFinishLen和uiComLen重新赋值并继续读取数据
 			bIsHeadChked = true;
-			unsigned int uiPacketLen = *(unsigned int*)(pOverLap->szpRecvComBuf + sizeof(unsigned int) * 2);
+			m_txlNetLog->Write("check end success, move from %d to 0 by %d bytes", pOverLap->uiFinishLen, pOverLap->uiFinishLen - uiPacketLen);
 			memcpy(pOverLap->szpRecvComBuf, pOverLap->szpRecvComBuf + pOverLap->uiFinishLen, pOverLap->uiFinishLen - uiPacketLen);
 			pOverLap->uiFinishLen -= uiPacketLen;
 			pOverLap->uiComLen = m_pBaseConfig->m_uiMaxPacketSize - pOverLap->uiFinishLen;
