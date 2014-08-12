@@ -294,12 +294,13 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 			{
 			case 2:	// 包头校验失败
 				// to do remove connect
+				RemoveConnect(pOverLap);
 				return;
 			case 1:	//	读取的数据长度小于包头长度
 				continue;
 			case 0:	//	校验成功，顺带校验一下包尾
 				bIsHeadChked = true;
-				retChkEnd = m_pChecker->CheckPacketHead(pOverLap, m_pBaseConfig->m_uiHeadPacketSize);
+				retChkEnd = m_pChecker->CheckPacketEnd(pOverLap, m_pBaseConfig->m_uiHeadPacketSize, m_pBaseConfig->m_uiMaxPacketSize);
 				break;
 			}
 		}
@@ -312,11 +313,17 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 		{
 		case 2: // 包尾校验失败
 			// to do remove connect
+			RemoveConnect(pOverLap);
 			return;
 		case 1:	// 读取数据长度小于整个包的长度
 			continue;
 		case 0:	// 包尾校验成功
-			;// to do 移动内存，重新给重叠结构中的uiFinishLen和uiComLen重新赋值并继续读取数据
+			// to do 移动内存，重新给重叠结构中的uiFinishLen和uiComLen重新赋值并继续读取数据
+			bIsHeadChked = true;
+			unsigned int uiPacketLen = *(unsigned int*)(pOverLap->szpRecvComBuf + sizeof(unsigned int) * 2);
+			memcpy(pOverLap->szpRecvComBuf, pOverLap->szpRecvComBuf + pOverLap->uiFinishLen, pOverLap->uiFinishLen - uiPacketLen);
+			pOverLap->uiFinishLen -= uiPacketLen;
+			pOverLap->uiComLen = m_pBaseConfig->m_uiMaxPacketSize - pOverLap->uiFinishLen;
 		}
 	}
 
