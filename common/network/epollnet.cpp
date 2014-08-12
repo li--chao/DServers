@@ -299,7 +299,7 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 				continue;
 			case 0:	//	校验成功，顺带校验一下包尾
 				bIsHeadChked = true;
-				retChkEnd = m_pChecker->CheckPacketHead(pOverLap, m_pBaseConfig->m_uiHeadPacketSize, m_pBaseConfig->m_uiMaxPacketSize);
+				retChkEnd = m_pChecker->CheckPacketHead(pOverLap, m_pBaseConfig->m_uiHeadPacketSize);
 				break;
 			}
 		}
@@ -316,7 +316,7 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 		case 1:	// 读取数据长度小于整个包的长度
 			continue;
 		case 0:	// 包尾校验成功
-			// to do 移动内存，重新给重叠结构中的uiFinishLen和uiComLen重新赋值
+			;// to do 移动内存，重新给重叠结构中的uiFinishLen和uiComLen重新赋值并继续读取数据
 		}
 	}
 

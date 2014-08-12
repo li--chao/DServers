@@ -2,6 +2,7 @@
 #define BASE_CONFIG_H
 
 #include "BaseCommon.h"
+#include "packet.h"
 
 class BaseConfig
 {

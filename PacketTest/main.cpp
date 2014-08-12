@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include "../common/packet.h"
 
 #define TARGET_IP "192.168.1.8"
 #define TARGET_PORT 3030
@@ -27,15 +28,15 @@ int main(int argc, char** argv)
 	char szpSndBuff[1024];
 
 	int idx = 1;
-	while(1)
+	int sock = socket(AF_INET, SOCK_STREAM, 0);
+	int ret = connect(sock, (sockaddr*)&servAddr, uiSocketLen);
+	if(ret == -1)
 	{
-		int sock = socket(AF_INET, SOCK_STREAM, 0);
-		int ret = connect(sock, (sockaddr*)&servAddr, uiSocketLen);
-		printf("*%d) connect ret = %d errno = %s(%d)\n", idx++, ret, strerror(errno), errno);
-		
-		sleep(2);
+		printf("connect error\n");
+		return 1;
 	}
 
+	
 	pthread_mutex_lock(&deadlock);
 	pthread_mutex_lock(&deadlock);
 

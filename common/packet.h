@@ -14,7 +14,6 @@ struct PacketHead
 {
 	unsigned int m_uiIdentifyCode; 
 	unsigned int m_uiOperateCode;
-	unsigned long long m_u64SessionID;
 	unsigned int m_uiPacketLength;
 };
 
