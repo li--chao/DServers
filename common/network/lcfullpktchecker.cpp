@@ -19,7 +19,7 @@ int LcFullPktChecker::CheckPacketHead(OverLap* pOverLap, const unsigned int& uiH
 	{
 		return 1;
 	}
-	unsigned int uiIdentifyCode = *(unsigned int*)pOverLap->szpRecvComBuf;
+	unsigned int uiIdentifyCode = *(unsigned int*)pOverLap->szpComBuf;
 
 	if(uiIdentifyCode != IDENTIFY_CODE)
 	{
@@ -30,13 +30,13 @@ int LcFullPktChecker::CheckPacketHead(OverLap* pOverLap, const unsigned int& uiH
 
 int LcFullPktChecker::CheckPacketEnd(OverLap* pOverLap, const unsigned int& uiHeadSize, const unsigned int& uiMaxPacketSize)
 {
-	unsigned int uiBodyLen = *(unsigned int*)(pOverLap->szpRecvComBuf + 8);
+	unsigned int uiBodyLen = *(unsigned int*)(pOverLap->szpComBuf + OFFSET_PACKET_LEN);
 	if(pOverLap->uiFinishLen < uiBodyLen)
 	{
 		return 1;	//  not full packet
 	}
 	
-	if(*(unsigned short*)(pOverLap->szpRecvComBuf + uiBodyLen - sizeof(unsigned short)) != END_CODE)
+	if(*(unsigned short*)(pOverLap->szpComBuf + uiBodyLen - sizeof(unsigned short)) != END_CODE)
 	{
 		return 2;  //  error packet
 	}

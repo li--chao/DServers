@@ -26,18 +26,20 @@ struct OverLap
 		uiPeerIP = 0;
 		usPeerPort = 0;
 		u64LastRecvPack = 0ULL;
-		szpRecvComBuf = NULL;
-		szpSndComBuf = NULL;
+		szpComBuf = NULL;
+		uiPacketLen = 0;
 	}
 
 	unsigned long long u64SessionID;
-	char* szpRecvComBuf;
-	char* szpSndComBuf;
+	char* szpComBuf;
+//	char* szpSndComBuf;
+//	char* szpWorkComBuf;
 	int fd;
 	unsigned int uiComLen;
 	unsigned int uiFinishLen;
 	unsigned int uiSndComLen;
 	unsigned int uiSndFinishLen;
+	unsigned int uiPacketLen;
 	unsigned int uiPeerIP;
 	unsigned short usPeerPort;
 	unsigned long long u64LastRecvPack;

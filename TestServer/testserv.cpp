@@ -18,7 +18,7 @@ int TestServ::MainFun()
 		long lptr = 0;
 		m_pExtServNet->GetRequest(lptr);
 		OverLap* pOverLap = (OverLap*)lptr;
-		memcpy(pOverLap->szpSndComBuf, pOverLap->szpRecvComBuf, pOverLap->uiComLen);
+//		memcpy(pOverLap->szpSndComBuf, pOverLap->szpRecvComBuf, pOverLap->uiComLen);
 		m_pExtServNet->SendData((long)pOverLap);
 		
 	}

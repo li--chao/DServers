@@ -7,7 +7,9 @@ LcEpollNet::LcEpollNet()
 {
 	m_lsnSocket = -1;
 
-	m_pIOQueue = NULL;
+	m_pIORecvQueue = NULL;
+	m_pIOWorkQueue = NULL;
+	m_pIOSndQueue = NULL;
 	m_epSocket = -1;
 	m_pEpollEvs = NULL;
 	m_szpRecvPackMem = NULL;
@@ -54,21 +56,27 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 		return -1;
 	}
 
-	m_pIOQueue = new OverLap[pBaseConfig->m_uiMaxOverLapNum];
+	m_pIORecvQueue = new OverLap[pBaseConfig->m_uiMaxOverLapNum];
+	m_pIOWorkQueue = new OverLap[pBaseConfig->m_uiMaxOverLapNum];
+	m_pIOSndQueue = new OverLap[pBaseConfig->m_uiMaxOverLapNum];
+
 	m_szpRecvPackMem = new char [pBaseConfig->m_uiMaxOverLapNum * pBaseConfig->m_uiMaxPacketSize];
+	m_szpWorkPackMem = new char [pBaseConfig->m_uiMaxOverLapNum * pBaseConfig->m_uiMaxPacketSize];
 	m_szpSndPackMem = new char [pBaseConfig->m_uiMaxOverLapNum * pBaseConfig->m_uiMaxPacketSize];
 	m_pEpollEvs = new struct epoll_event[pBaseConfig->m_uiConcurrentNum];
 	m_pChecker = new LcFullPktChecker();
 
-	if(m_pIOQueue == NULL || m_szpRecvPackMem == NULL || m_szpSndPackMem == NULL || m_pChecker == NULL)
+	if(m_pIORecvQueue == NULL || m_pIOWorkQueue == NULL || m_pIOSndQueue == NULL ||
+	   m_szpRecvPackMem == NULL || m_szpWorkPackMem == NULL || m_szpSndPackMem == NULL || 
+	   m_pEpollEvs == NULL || m_pChecker == NULL)
 	{
 		m_txlNetLog->Write("no enough memory for server!");
 		return -1;
 	}
 
-	if(m_IONetMemQue.Init(pBaseConfig->m_uiMaxOverLapNum))
+	if(m_IONetConnQue.Init(pBaseConfig->m_uiMaxOverLapNum))
 	{
-		m_txlNetLog->Write("io memory queue init error");
+		m_txlNetLog->Write("io conn queue init error");
 		return -1;
 	}
 
@@ -80,9 +88,9 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 
 	for(int i = 0; i < (int)pBaseConfig->m_uiMaxOverLapNum; i++)
 	{
-		m_pIOQueue[i].szpRecvComBuf = m_szpRecvPackMem + (i * MAX_PACKET_SIZE);
-		m_pIOQueue[i].szpSndComBuf = m_szpSndPackMem + (i * MAX_PACKET_SIZE);
-		m_IONetMemQue.Push((long)&m_pIOQueue[i]);
+		m_pIORecvQueue[i].szpComBuf = m_szpRecvPackMem + (i * pBaseConfig->m_uiMaxPacketSize);
+
+		m_IONetConnQue.Push((long)&m_pIORecvQueue[i]);
 	}
 
 	if(BindAndLsn(pBaseConfig->m_iBackLog, pBaseConfig->m_usServPort))
@@ -95,7 +103,7 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 void LcEpollNet::RemoveConnect(OverLap* pOverLap)
 {
 	struct epoll_event ev;
-	m_IONetMemQue.Push((long)pOverLap);
+	m_IONetConnQue.Push((long)pOverLap);
 	epoll_ctl(m_epSocket, EPOLL_CTL_DEL, pOverLap->fd, &ev);
 	close(pOverLap->fd);
 	pOverLap->u64SessionID = 0;
@@ -105,6 +113,11 @@ void LcEpollNet::RemoveConnect(OverLap* pOverLap)
 void LcEpollNet::GetRequest(long& lptr)
 {
 	m_IONetWorkQue.Pop(lptr);
+}
+
+void LcEpollNet::ReleaseRequest(const long& lptr)
+{
+	m_IONetWorkQue.Push(lptr);
 }
 
 void LcEpollNet::SendData(const long& lptr)
@@ -229,7 +242,7 @@ void* LcEpollNet::Thread_NetServ(void* param)
 void LcEpollNet::EpollAccept(const int& fd, const unsigned int& uiPeerIP, const unsigned short& usPeerPort)
 {
 	long ptr = 0;
-	m_IONetMemQue.Pop(ptr);
+	m_IONetConnQue.Pop(ptr);
 	OverLap* pOverLap = (OverLap*)ptr;
 
 	pOverLap->uiComLen = m_pBaseConfig->m_uiMaxPacketSize;
@@ -245,7 +258,7 @@ void LcEpollNet::EpollAccept(const int& fd, const unsigned int& uiPeerIP, const 
 
 	if(epoll_ctl(m_epSocket, EPOLL_CTL_ADD, fd, &ev) == -1)
 	{
-		m_IONetMemQue.Push(ptr);
+		m_IONetConnQue.Push(ptr);
 		close(fd);
 		char szaPeerIP[20];
 		sprintf(szaPeerIP, "%u.%u.%u.%u", *((unsigned char*)&uiPeerIP), *((unsigned char*)&uiPeerIP + 1), *((unsigned char*)&uiPeerIP + 2), *((unsigned char*)&uiPeerIP + 3));
@@ -262,7 +275,7 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 
 	while(1)
 	{
-		ret = recv(pOverLap->fd, pOverLap->szpRecvComBuf + pOverLap->uiFinishLen, pOverLap->uiComLen, 0);
+		ret = recv(pOverLap->fd, pOverLap->szpComBuf + pOverLap->uiFinishLen, pOverLap->uiComLen, 0);
 		if(ret == 0 || ret > (int)pOverLap->uiComLen)
 		{
 			RemoveConnect(pOverLap);
@@ -285,6 +298,7 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 		m_txlNetLog->Write("got data(%d byte) from peer(%s:%u)", ret, szaPeerIP, ntohs(pOverLap->usPeerPort));
 		pOverLap->uiComLen -= ret;
 		pOverLap->uiFinishLen += ret;
+
 		switch(CheckPacket(pOverLap, bIsHeadChked))
 		{
 		case 0:
@@ -303,9 +317,10 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 
 void LcEpollNet::EpollSend(OverLap* pOverLap)
 {
+/**
 	while(1)
 	{
-		int ret = send(pOverLap->fd, pOverLap->szpSndComBuf, pOverLap->uiComLen, MSG_NOSIGNAL);
+		int ret = send(pOverLap->fd, pOverLap->szpComBuf, pOverLap->uiComLen, MSG_NOSIGNAL);
 		m_txlNetLog->Write("send ret(%d), %s(%d)", ret, strerror(errno), errno);
 		if(ret == -1 && errno == EAGAIN)
 			continue;
@@ -320,6 +335,7 @@ void LcEpollNet::EpollSend(OverLap* pOverLap)
 		m_txlNetLog->Write("EPOll_CTL_MOD error when EpollSend");
 		RemoveConnect(pOverLap);
 	}
+**/
 }
 
 int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
@@ -343,15 +359,23 @@ int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 			}
 		}
 
-		unsigned int uiPacketLen = *(unsigned int*)(pOverLap->szpRecvComBuf + OFFSET_PACKET_LEN);
+		unsigned int uiPacketLen = *(unsigned int*)(pOverLap->szpComBuf + OFFSET_PACKET_LEN);
 		switch(m_pChecker->CheckPacketEnd(pOverLap, m_pBaseConfig->m_uiHeadPacketSize, m_pBaseConfig->m_uiMaxPacketSize))	//	校验包尾
 		{
 		case 0:	//	包尾校验成功，bIsHeadChked设为false，移动内存，并重新给重叠结构的uiComLen和uiFinishLen赋值校验下一个包，然后将完整的包送到工作线程
 			m_txlNetLog->Write("check end success");
 			bIsHeadChked = false;
-			memcpy(pOverLap->szpRecvComBuf, pOverLap->szpRecvComBuf + uiPacketLen, pOverLap->uiFinishLen - uiPacketLen);
+			memcpy(pOverLap->szpComBuf, pOverLap->szpComBuf + uiPacketLen, pOverLap->uiFinishLen - uiPacketLen);
 			pOverLap->uiFinishLen -= uiPacketLen;
 			pOverLap->uiComLen = m_pBaseConfig->m_uiMaxPacketSize - pOverLap->uiFinishLen;
+			SendToWorkQue(pOverLap, uiPacketLen);
+/**
+			long lWorkMem;
+			m_IONetMemQue.Pop(lWorkMem);
+			char* szpWorkMem = (char*)lWorkMem;
+			memcpy(szpWorkMem, pOverLap->szpRecvComBuf, uiPacketLen);
+			m_IONetWorkQue.Push(lWorkMem);
+**/
 			break;
 		case 1:	//	读取包的长度小于包的长度
 			m_txlNetLog->Write("packet len: %d, read len: %d not long enough to check end", uiPacketLen, pOverLap->uiFinishLen);
@@ -363,4 +387,9 @@ int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 	}
 
 	return 0;
+}
+
+void LcEpollNet::SendToWorkQue(OverLap* pOverLap, const unsigned int& uiPacketLen)
+{
+
 }

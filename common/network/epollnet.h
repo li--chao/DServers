@@ -15,6 +15,7 @@ public:
 	int StartThread();
 	void RemoveConnect(OverLap* pOverLap);
 	void GetRequest(long& lptr);
+	void ReleaseRequest(const long& lptr);
 	void SendData(const long& lptr);
 	
 protected:
@@ -26,12 +27,16 @@ protected:
 	}
 
 private:
-	OverLap* m_pIOQueue;
+	OverLap* m_pIORecvQueue;
+	OverLap* m_pIOWorkQueue;
+	OverLap* m_pIOSndQueue;
 	int m_epSocket;
 	struct epoll_event *m_pEpollEvs;
 	char* m_szpRecvPackMem;
+	char* m_szpWorkPackMem;
 	char* m_szpSndPackMem;
-	BaseConfig* m_pBaseConfig;	
+	BaseConfig* m_pBaseConfig;
+	NetQueue m_IONetConnQue;
 	NetQueue m_IONetMemQue;
 	NetQueue m_IONetWorkQue;
 //	NetQueue m_IONetSndQue;
@@ -42,6 +47,7 @@ private:
 	void EpollRecv(OverLap* pOverLap);
 	void EpollSend(OverLap* pOverLap);
 	int CheckPacket(OverLap* pOverLap, bool& bIsHeadChked);
+	void SendToWorkQue(OverLap* pOverLap, const unsigned int& uiPacketLen);
 };
 
 #endif
