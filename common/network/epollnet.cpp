@@ -89,6 +89,8 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 	for(int i = 0; i < (int)pBaseConfig->m_uiMaxOverLapNum; i++)
 	{
 		m_pIORecvQueue[i].szpComBuf = m_szpRecvPackMem + (i * pBaseConfig->m_uiMaxPacketSize);
+		m_pIOWorkQueue[i].szpComBuf = m_szpWorkPackMem + (i * pBaseConfig->m_uiMaxPacketSize);
+		m_pIOSndQueue[i].szpComBuf = m_szpSndPackMem + (i * pBaseConfig->m_uiMaxPacketSize);
 
 		m_IONetConnQue.Push((long)&m_pIORecvQueue[i]);
 	}
