@@ -8,6 +8,7 @@
 #define END_CODE 0x2B2B
 #define MEM_OFFSET_IN_CLASS(TYPE, MEMBER) ((size_t) & ((TYPE *)0)->MEMBER )
 #define OFFSET_PACKET_LEN (sizeof(unsigned int) * 2)
+#define OFFSET_OPERATE_LEN (sizeof(unsigned int))
 
 #pragma pack(1)
 
