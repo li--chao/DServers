@@ -11,7 +11,7 @@
 #include <string.h>
 #include "../common/packet.h"
 
-#define TARGET_IP "192.168.1.8"
+#define TARGET_IP "192.168.0.224"
 #define TARGET_PORT 3040
 
 pthread_mutex_t deadlock;

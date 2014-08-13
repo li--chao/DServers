@@ -282,62 +282,23 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 			return;
 		}
 
-//		m_txlNetLog->Write("got data(%d byte) from peer(%s:%u)", ret, szaPeerIP, ntohs(pOverLap->usPeerPort));
+		m_txlNetLog->Write("got data(%d byte) from peer(%s:%u)", ret, szaPeerIP, ntohs(pOverLap->usPeerPort));
 		pOverLap->uiComLen -= ret;
 		pOverLap->uiFinishLen += ret;
-		int retChkHead = 0;
-		int retChkEnd = 0;
-		if(!bIsHeadChked)
+		switch(CheckPacket(pOverLap, bIsHeadChked))
 		{
-			m_txlNetLog->Write("get %d bytes data check head", ret);
-			retChkHead = m_pChecker->CheckPacketHead(pOverLap, m_pBaseConfig->m_uiHeadPacketSize);
-			switch(retChkHead)
-			{
-			case 2:	// 包头校验失败
-				// to do remove connect
-				m_txlNetLog->Write("check head error, connect will be closed.");
-				RemoveConnect(pOverLap);
-				return;
-			case 1:	//	读取的数据长度小于包头长度
-				m_txlNetLog->Write("%d bytes is not long enough to check head", ret);
-				continue;
-			case 0:	//	校验成功，顺带校验一下包尾
-				m_txlNetLog->Write("check head success, next check end");
-				bIsHeadChked = true;
-				retChkEnd = m_pChecker->CheckPacketEnd(pOverLap, m_pBaseConfig->m_uiHeadPacketSize, m_pBaseConfig->m_uiMaxPacketSize);
-				break;
-			}
-		}
-		else
-		{
-			m_txlNetLog->Write("check end");
-			retChkEnd = m_pChecker->CheckPacketEnd(pOverLap, m_pBaseConfig->m_uiHeadPacketSize, m_pBaseConfig->m_uiMaxPacketSize);
-		}
-
-		unsigned int uiPacketLen = *(unsigned int*)(pOverLap->szpRecvComBuf + sizeof(unsigned int) * 2);
-
-		switch(retChkEnd)
-		{
-		case 2: // 包尾校验失败
-			// to do remove connect
-			m_txlNetLog->Write("check end error, connect will be closed");
+		case 0:
+			continue;
+		case 1:		//	包头校验失败，删除连接
+		case 2:		//	包尾校验失败，删除连接
 			RemoveConnect(pOverLap);
 			return;
-		case 1:	// 读取数据长度小于整个包的长度
-			m_txlNetLog->Write("packet len: %d, read len: %d not long enough to check end", uiPacketLen, pOverLap->uiFinishLen);
+		case 3:		//	长度小于包头长度，继续从缓存中读取数据
+		case 4:		//	长度小于全包长度，继续从缓存中读取数据
 			continue;
-		case 0:	// 包尾校验成功
-			// to do 移动内存，重新给重叠结构中的uiFinishLen和uiComLen重新赋值并继续读取数据
-			bIsHeadChked = true;
-			m_txlNetLog->Write("check end success, move from %d to 0 by %d bytes", pOverLap->uiFinishLen, pOverLap->uiFinishLen - uiPacketLen);
-			memcpy(pOverLap->szpRecvComBuf, pOverLap->szpRecvComBuf + pOverLap->uiFinishLen, pOverLap->uiFinishLen - uiPacketLen);
-			pOverLap->uiFinishLen -= uiPacketLen;
-			pOverLap->uiComLen = m_pBaseConfig->m_uiMaxPacketSize - pOverLap->uiFinishLen;
 		}
 	}
 
-	//	to do check the endcode of the packet
-//	m_IONetWorkQue.Push((long)pOverLap);
 }
 
 void LcEpollNet::EpollSend(OverLap* pOverLap)
@@ -359,4 +320,47 @@ void LcEpollNet::EpollSend(OverLap* pOverLap)
 		m_txlNetLog->Write("EPOll_CTL_MOD error when EpollSend");
 		RemoveConnect(pOverLap);
 	}
+}
+
+int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
+{
+	while(1)
+	{
+		if(!bIsHeadChked)	// 校验包头
+		{
+			switch(m_pChecker->CheckPacketHead(pOverLap, m_pBaseConfig->m_uiHeadPacketSize))
+			{
+			case 0:	//	包头校验成功，bIsHeadChked设为true
+				bIsHeadChked = true;
+				m_txlNetLog->Write("check head success");
+				break;
+			case 1:	//	读取包的长度小于包头的长度
+				m_txlNetLog->Write("%d bytes is not long enough to check head", pOverLap->uiFinishLen);
+				return 3;
+			case 2:	//	校验失败
+				m_txlNetLog->Write("check head error, connect will be closed");
+				return 1;
+			}
+		}
+
+		unsigned int uiPacketLen = *(unsigned int*)(pOverLap->szpRecvComBuf + OFFSET_PACKET_LEN);
+		switch(m_pChecker->CheckPacketEnd(pOverLap, m_pBaseConfig->m_uiHeadPacketSize, m_pBaseConfig->m_uiMaxPacketSize))	//	校验包尾
+		{
+		case 0:	//	包尾校验成功，bIsHeadChked设为false，移动内存，并重新给重叠结构的uiComLen和uiFinishLen赋值校验下一个包，然后将完整的包送到工作线程
+			m_txlNetLog->Write("check end success");
+			bIsHeadChked = false;
+			memcpy(pOverLap->szpRecvComBuf, pOverLap->szpRecvComBuf + uiPacketLen, pOverLap->uiFinishLen - uiPacketLen);
+			pOverLap->uiFinishLen -= uiPacketLen;
+			pOverLap->uiComLen = m_pBaseConfig->m_uiMaxPacketSize - pOverLap->uiFinishLen;
+			break;
+		case 1:	//	读取包的长度小于包的长度
+			m_txlNetLog->Write("packet len: %d, read len: %d not long enough to check end", uiPacketLen, pOverLap->uiFinishLen);
+			return 4;
+		case 2:	//	包尾校验失败
+			m_txlNetLog->Write("check end error, connect will be closed");
+			return 2;
+		}
+	}
+
+	return 0;
 }

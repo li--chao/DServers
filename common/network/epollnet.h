@@ -41,6 +41,7 @@ private:
 	void EpollAccept(const int& fd, const unsigned int& uiPeerIP, const unsigned short& usPeerPort);
 	void EpollRecv(OverLap* pOverLap);
 	void EpollSend(OverLap* pOverLap);
+	int CheckPacket(OverLap* pOverLap, bool& bIsHeadChked);
 };
 
 #endif
