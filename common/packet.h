@@ -10,6 +10,8 @@
 #define OFFSET_PACKET_LEN (sizeof(unsigned int) * 2)
 #define OFFSET_OPERATE_LEN (sizeof(unsigned int))
 
+#include "operatecode.h"
+
 #pragma pack(1)
 
 struct PacketHead
@@ -21,6 +23,10 @@ struct PacketHead
 
 struct TestProtocol
 {
+	struct TestProtocol()
+	{
+		m_phPrtcolHead.m_uiOperateCode = TEST_PROTOCOL;
+	}
 	PacketHead m_phPrtcolHead;
 	unsigned int m_uiTestDataA;
 	unsigned int m_uiTestDataB;
