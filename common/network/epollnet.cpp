@@ -80,6 +80,12 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 		return -1;
 	}
 
+	if(m_IONetWorkMemQue.Init(pBaseConfig->m_uiMaxOverLapNum))
+	{
+		m_txlNetLog->Write("work memory queue init error");
+		return -1;
+	}
+
 	if(m_IONetWorkQue.Init(pBaseConfig->m_uiMaxOverLapNum))
 	{
 		m_txlNetLog->Write("io work queue init error");
@@ -93,6 +99,7 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 		m_pIOSndQueue[i].szpComBuf = m_szpSndPackMem + (i * pBaseConfig->m_uiMaxPacketSize);
 
 		m_IONetConnQue.Push((long)&m_pIORecvQueue[i]);
+		m_IONetWorkMemQue.Push((long)&m_pIOWorkQueue[i]);
 	}
 
 	if(BindAndLsn(pBaseConfig->m_iBackLog, pBaseConfig->m_usServPort))
@@ -119,7 +126,7 @@ void LcEpollNet::GetRequest(long& lptr)
 
 void LcEpollNet::ReleaseRequest(const long& lptr)
 {
-	m_IONetWorkQue.Push(lptr);
+	m_IONetWorkMemQue.Push(lptr);
 }
 
 void LcEpollNet::SendData(const long& lptr)
@@ -373,7 +380,6 @@ int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 			SendToWorkQue(pOverLap, uiPacketLen);
 /**
 			long lWorkMem;
-			m_IONetMemQue.Pop(lWorkMem);
 			char* szpWorkMem = (char*)lWorkMem;
 			memcpy(szpWorkMem, pOverLap->szpRecvComBuf, uiPacketLen);
 			m_IONetWorkQue.Push(lWorkMem);
@@ -393,5 +399,11 @@ int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 
 void LcEpollNet::SendToWorkQue(OverLap* pOverLap, const unsigned int& uiPacketLen)
 {
-
+	long lWorkMem = 0;
+	m_IONetWorkMemQue.Pop(lWorkMem);
+	OverLap* pWorkOverLap = (OverLap*)lWorkMem;
+	memcpy(pWorkOverLap->szpComBuf, pOverLap->szpComBuf, uiPacketLen);
+	pWorkOverLap->fd = pOverLap->fd;
+	pWorkOverLap->uiPacketLen = uiPacketLen;
+	m_IONetWorkQue.Push((long)pWorkOverLap);
 }

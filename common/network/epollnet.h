@@ -37,7 +37,7 @@ private:
 	char* m_szpSndPackMem;
 	BaseConfig* m_pBaseConfig;
 	NetQueue m_IONetConnQue;
-	NetQueue m_IONetMemQue;
+	NetQueue m_IONetWorkMemQue;
 	NetQueue m_IONetWorkQue;
 //	NetQueue m_IONetSndQue;
 	LcBaseChecker* m_pChecker;

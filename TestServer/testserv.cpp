@@ -18,8 +18,11 @@ int TestServ::MainFun()
 		long lptr = 0;
 		m_pExtServNet->GetRequest(lptr);
 		OverLap* pOverLap = (OverLap*)lptr;
-//		memcpy(pOverLap->szpSndComBuf, pOverLap->szpRecvComBuf, pOverLap->uiComLen);
-		m_pExtServNet->SendData((long)pOverLap);
+		TestProtocolUn testProtocolUn;
+		memcpy(testProtocolUn.m_szaPacketBuff, pOverLap->szpComBuf, pOverLap->uiPacketLen);
+		m_pLog->Write("In work Queue %d:%d", pOverLap->uiPacketLen, *(unsigned int*)(pOverLap->szpComBuf + OFFSET_PACKET_LEN));
+		m_pExtServNet->ReleaseRequest(lptr);
+//		m_pExtServNet->SendData((long)pOverLap);
 		
 	}
 	return 0;

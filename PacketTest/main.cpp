@@ -52,10 +52,10 @@ int main(int argc, char** argv)
 	printf("testdataA = %u\n", *(unsigned int*)(cTestProtocolUn.m_szaPacketBuff + 12));
 	printf("testdataB = %u\n", *(unsigned int*)(cTestProtocolUn.m_szaPacketBuff + 16));
 
-	while(1)
-	{
+//	while(1)
+//	{
 		send(sock, cTestProtocolUn.m_szaPacketBuff, cTestProtocol.m_phPrtcolHead.m_uiPacketLength, MSG_NOSIGNAL);
-	}
+//	}
 	
 	pthread_mutex_lock(&deadlock);
 	pthread_mutex_lock(&deadlock);

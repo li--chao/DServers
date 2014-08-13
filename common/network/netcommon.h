@@ -52,6 +52,7 @@ public:
 	virtual int StartThread() = 0;
 	virtual void RemoveConnect(OverLap* pOverLap) = 0;
 	virtual void GetRequest(long& lptr) = 0;
+	virtual void ReleaseRequest(const long& ptr) = 0;
 	virtual void SendData(const long& lptr) = 0;
 
 protected:
