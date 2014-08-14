@@ -23,7 +23,7 @@ struct PacketHead
 
 struct TestProtocol
 {
-	struct TestProtocol()
+	TestProtocol()
 	{
 		m_phPrtcolHead.m_uiOperateCode = TEST_PROTOCOL;
 	}
