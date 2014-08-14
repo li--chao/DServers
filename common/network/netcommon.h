@@ -28,12 +28,12 @@ struct OverLap
 		u64LastRecvPack = 0ULL;
 		szpComBuf = NULL;
 		uiPacketLen = 0;
+		pSndList = NULL;
 	}
 
 	unsigned long long u64SessionID;
 	char* szpComBuf;
-//	char* szpSndComBuf;
-//	char* szpWorkComBuf;
+	OverLap* pSndList;
 	int fd;
 	unsigned int uiComLen;
 	unsigned int uiFinishLen;

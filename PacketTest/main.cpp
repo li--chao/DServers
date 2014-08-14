@@ -44,6 +44,7 @@ int main(int argc, char** argv)
 	cTestProtocol.m_uiTestDataA = 10;
 	cTestProtocol.m_uiTestDataB = 20;
 	cTestProtocol.m_phPrtcolHead.m_uiIdentifyCode = IDENTIFY_CODE;
+	cTestProtocol.m_phPrtcolHead.m_uiOperateCode = TEST_PROTOCOL;
 	cTestProtocol.m_phPrtcolHead.m_uiPacketLength = sizeof(cTestProtocol);
 	cTestProtocol.m_usEndCode = END_CODE;
 	TestProtocolUn cTestProtocolUn;

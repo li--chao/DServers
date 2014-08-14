@@ -39,6 +39,7 @@ private:
 	NetQueue m_IONetConnQue;
 	NetQueue m_IONetWorkMemQue;
 	NetQueue m_IONetWorkQue;
+	NetQueue m_IONetSndMemQue;
 //	NetQueue m_IONetSndQue;
 	LcBaseChecker* m_pChecker;
 
@@ -48,6 +49,7 @@ private:
 	void EpollSend(OverLap* pOverLap);
 	int CheckPacket(OverLap* pOverLap, bool& bIsHeadChked);
 	void SendToWorkQue(OverLap* pOverLap, const unsigned int& uiPacketLen);
+	void ReleaseSndList(OverLap* pOverLap);
 };
 
 #endif

@@ -92,6 +92,12 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 		return -1;
 	}
 
+	if(m_IONetSndMemQue.Init(pBaseConfig->m_uiMaxOverLapNum))
+	{
+		m_txlNetLog->Write("snd memory queue init error");
+		return -1;
+	}
+
 	for(int i = 0; i < (int)pBaseConfig->m_uiMaxOverLapNum; i++)
 	{
 		m_pIORecvQueue[i].szpComBuf = m_szpRecvPackMem + (i * pBaseConfig->m_uiMaxPacketSize);
@@ -100,6 +106,7 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 
 		m_IONetConnQue.Push((long)&m_pIORecvQueue[i]);
 		m_IONetWorkMemQue.Push((long)&m_pIOWorkQueue[i]);
+		m_IONetSndMemQue.Push((long)&m_pIOSndQueue[i]);
 	}
 
 	if(BindAndLsn(pBaseConfig->m_iBackLog, pBaseConfig->m_usServPort))
@@ -117,6 +124,8 @@ void LcEpollNet::RemoveConnect(OverLap* pOverLap)
 	close(pOverLap->fd);
 	pOverLap->u64SessionID = 0;
 	pOverLap->fd = -1;
+	//	释放发送链
+	ReleaseSndList(pOverLap);
 }
 
 void LcEpollNet::GetRequest(long& lptr)
@@ -149,7 +158,7 @@ int LcEpollNet::BindAndLsn(const int& iBackLog, const unsigned short& usPort)
 	svrSockAddr.sin_port = htons(usPort);
 	svrSockAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-	m_epSocket = epoll_create(64);
+	m_epSocket = epoll_create(m_pBaseConfig->m_uiConcurrentNum);
 	if(m_epSocket == -1)
 	{
 		m_txlNetLog->Write("epoll_create error!");
@@ -326,7 +335,6 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 
 void LcEpollNet::EpollSend(OverLap* pOverLap)
 {
-/**
 	while(1)
 	{
 		int ret = send(pOverLap->fd, pOverLap->szpComBuf, pOverLap->uiComLen, MSG_NOSIGNAL);
@@ -344,7 +352,6 @@ void LcEpollNet::EpollSend(OverLap* pOverLap)
 		m_txlNetLog->Write("EPOll_CTL_MOD error when EpollSend");
 		RemoveConnect(pOverLap);
 	}
-**/
 }
 
 int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
@@ -400,4 +407,16 @@ void LcEpollNet::SendToWorkQue(OverLap* pOverLap, const unsigned int& uiPacketLe
 	pWorkOverLap->fd = pOverLap->fd;
 	pWorkOverLap->uiPacketLen = uiPacketLen;
 	m_IONetWorkQue.Push((long)pWorkOverLap);
+}
+
+void LcEpollNet::ReleaseSndList(OverLap* pOverLap)
+{
+	while(pOverLap->pSndList)
+	{
+		OverLap* pSndOverLap = pOverLap->pSndList;
+		m_IONetSndMemQue.Push((long)pSndOverLap);
+		pOverLap->pSndList = NULL;
+		pOverLap = pSndOverLap;
+	}
+
 }
