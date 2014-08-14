@@ -23,10 +23,10 @@ struct PacketHead
 
 struct TestProtocol
 {
-	TestProtocol()
-	{
-		m_phPrtcolHead.m_uiOperateCode = TEST_PROTOCOL;
-	}
+//	TestProtocol()
+//	{
+//		m_phPrtcolHead.m_uiOperateCode = TEST_PROTOCOL;
+//	}
 	PacketHead m_phPrtcolHead;
 	unsigned int m_uiTestDataA;
 	unsigned int m_uiTestDataB;
