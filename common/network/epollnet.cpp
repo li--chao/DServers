@@ -378,12 +378,6 @@ int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 			pOverLap->uiFinishLen -= uiPacketLen;
 			pOverLap->uiComLen = m_pBaseConfig->m_uiMaxPacketSize - pOverLap->uiFinishLen;
 			SendToWorkQue(pOverLap, uiPacketLen);
-/**
-			long lWorkMem;
-			char* szpWorkMem = (char*)lWorkMem;
-			memcpy(szpWorkMem, pOverLap->szpRecvComBuf, uiPacketLen);
-			m_IONetWorkQue.Push(lWorkMem);
-**/
 			break;
 		case 1:	//	读取包的长度小于包的长度
 			m_txlNetLog->Write("packet len: %d, read len: %d not long enough to check end", uiPacketLen, pOverLap->uiFinishLen);
