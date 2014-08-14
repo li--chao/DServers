@@ -335,14 +335,22 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 
 void LcEpollNet::EpollSend(OverLap* pOverLap)
 {
-	while(1)
+	int fd = pOverLap->fd;
+	while(pOverLap->pSndList)
 	{
-		int ret = send(pOverLap->fd, pOverLap->szpComBuf, pOverLap->uiComLen, MSG_NOSIGNAL);
-		m_txlNetLog->Write("send ret(%d), %s(%d)", ret, strerror(errno), errno);
-		if(ret == -1 && errno == EAGAIN)
-			continue;
-		else
-			break;
+		OverLap* pSndOverLap = pOverLap->pSndList;
+		if(pSndOverLap->uiSndComLen != 0)
+		{
+			int ret = send(fd, pOverLap->szpComBuf, pOverLap->uiSndComLen, MSG_NOSIGNAL);
+			if(ret == -1 && errno == EAGAIN)
+				continue;
+			else
+				break;
+		}
+
+		pOverLap->pSndList = pSndOverLap->pSndList;
+		m_IONetSndMemQue.Push((long)pSndOverLap);
+		continue;
 	}
 	struct epoll_event ev;
 	ev.events = EPOLLIN | EPOLLET;
