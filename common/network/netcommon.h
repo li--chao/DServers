@@ -29,6 +29,39 @@ struct OverLap
 		szpComBuf = NULL;
 		uiPacketLen = 0;
 		pSndList = NULL;
+
+		u64PacketRecv = 0;
+		u64PacketSnd = 0;
+	}
+
+	void InsertIntoSndList(OverLap* pOverLap, const bool& bFromTail = true)
+	{
+		if(pSndList == NULL)
+		{
+			pSndList = pOverLap;
+			return;
+		}
+
+		OverLap* pCurrentSndList = pSndList;
+		if(bFromTail)
+		{
+			while(pCurrentSndList->pSndList)
+			{
+				pCurrentSndList = pCurrentSndList->pSndList;
+			}
+			pCurrentSndList = pOverLap;
+		}
+		else
+		{
+			OverLap* pLast = pOverLap;
+			while(pLast->pSndList)
+			{
+				pLast = pLast->pSndList;
+			}
+
+			pLast->pSndList = pCurrentSndList;
+			pOverLap->pSndList = pOverLap;
+		}
 	}
 
 	unsigned long long u64SessionID;
@@ -42,6 +75,10 @@ struct OverLap
 	unsigned int uiPacketLen;
 	unsigned int uiPeerIP;
 	unsigned short usPeerPort;
+
+	unsigned long long u64PacketRecv;
+	unsigned long long u64PacketSnd;
+
 	unsigned long long u64LastRecvPack;
 };
 
@@ -52,7 +89,9 @@ public:
 	virtual int StartThread() = 0;
 	virtual void RemoveConnect(OverLap* pOverLap) = 0;
 	virtual void GetRequest(long& lptr) = 0;
-	virtual void ReleaseRequest(const long& ptr) = 0;
+	virtual void ReleaseRequest(const long& lptr) = 0;
+	virtual void RequestSnd(long& lptr) = 0;
+	virtual void ReleaseSndReq(const long& lptr) = 0;
 	virtual void SendData(const long& lptr) = 0;
 
 protected:

@@ -16,6 +16,8 @@ public:
 	void RemoveConnect(OverLap* pOverLap);
 	void GetRequest(long& lptr);
 	void ReleaseRequest(const long& lptr);
+	void RequestSnd(long& lptr);
+	void ReleaseSndReq(const long& lptr);
 	void SendData(const long& lptr);
 	
 protected:

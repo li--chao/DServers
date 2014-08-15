@@ -138,6 +138,16 @@ void LcEpollNet::ReleaseRequest(const long& lptr)
 	m_IONetWorkMemQue.Push(lptr);
 }
 
+void LcEpollNet::RequestSnd(long& lptr)
+{
+	m_IONetSndMemQue.Pop(lptr);
+}
+
+void LcEpollNet::ReleaseSndReq(const long& lptr)
+{
+	m_IONetSndMemQue.Push(lptr);
+}
+
 void LcEpollNet::SendData(const long& lptr)
 {
 	OverLap* pOverLap = (OverLap*)lptr;
@@ -339,19 +349,34 @@ void LcEpollNet::EpollSend(OverLap* pOverLap)
 	while(pOverLap->pSndList)
 	{
 		OverLap* pSndOverLap = pOverLap->pSndList;
-		if(pSndOverLap->uiSndComLen != 0)
+		while(pSndOverLap->uiSndComLen > 0 || pSndOverLap->uiSndFinishLen + pSndOverLap->uiSndComLen > m_pBaseConfig->m_uiMaxPacketSize)
 		{
-			int ret = send(fd, pOverLap->szpComBuf, pOverLap->uiSndComLen, MSG_NOSIGNAL);
+			int ret = send(fd, pSndOverLap->szpComBuf + pOverLap->uiSndFinishLen, pOverLap->uiSndComLen, MSG_NOSIGNAL);
 			if(ret == -1 && errno == EAGAIN)
-				continue;
-			else
-				break;
+			{
+				// to do 发起epoll写事件
+				SendData((long)pOverLap);
+				return;
+			}
+			else if(ret == 0 || ret > (int)pSndOverLap->uiSndComLen)
+			{
+				RemoveConnect(pOverLap);
+				return;
+			}
+
+			pSndOverLap->uiSndFinishLen += ret;
+			pSndOverLap->uiSndComLen -= ret;
 		}
 
+		pOverLap->u64PacketSnd += 1;
+		m_txlNetLog->Write("u64PacketSnd = %d, pSndOverLap->uiSndComLen = %d, pSndOverLap->uiSndFinishLen", pOverLap->u64PacketSnd, pSndOverLap->uiSndComLen, pSndOverLap->uiSndFinishLen);
 		pOverLap->pSndList = pSndOverLap->pSndList;
 		m_IONetSndMemQue.Push((long)pSndOverLap);
 		continue;
 	}
+
+	m_txlNetLog->Write("send over pOverLap->pSndList = %d", pOverLap->pSndList);
+	//	让fd重新可写
 	struct epoll_event ev;
 	ev.events = EPOLLIN | EPOLLET;
 	ev.data.ptr = (void*)pOverLap;
@@ -408,6 +433,7 @@ int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 
 void LcEpollNet::SendToWorkQue(OverLap* pOverLap, const unsigned int& uiPacketLen)
 {
+	pOverLap->u64PacketRecv += 1;		// 发包数+1
 	long lWorkMem = 0;
 	m_IONetWorkMemQue.Pop(lWorkMem);
 	OverLap* pWorkOverLap = (OverLap*)lWorkMem;

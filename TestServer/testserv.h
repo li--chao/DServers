@@ -16,6 +16,9 @@ public:
 private:
 	TextLog* m_pLog;
 	LcAbstractNet* m_pExtServNet;
+
+private:
+	int HandleTestProtocol(OverLap* pOverLap);
 };
 
 #endif
