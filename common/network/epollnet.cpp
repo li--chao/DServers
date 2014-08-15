@@ -433,12 +433,14 @@ int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 
 void LcEpollNet::SendToWorkQue(OverLap* pOverLap, const unsigned int& uiPacketLen)
 {
-	pOverLap->u64PacketRecv += 1;		// 发包数+1
+	pOverLap->u64PacketRecv += 1;		// 收包数+1
 	long lWorkMem = 0;
 	m_IONetWorkMemQue.Pop(lWorkMem);
 	OverLap* pWorkOverLap = (OverLap*)lWorkMem;
 	memcpy(pWorkOverLap->szpComBuf, pOverLap->szpComBuf, uiPacketLen);
 	pWorkOverLap->fd = pOverLap->fd;
+	pWorkOverLap->u64PacketRecv = pOverLap->u64PacketRecv;	//	将收包数赋给工作包
+	pWorkOverLap->u64PacketSnd = pOverLap->u64PacketSnd;	//	将发包数赋给工作包
 	pWorkOverLap->uiPacketLen = uiPacketLen;
 	m_IONetWorkQue.Push((long)pWorkOverLap);
 }
