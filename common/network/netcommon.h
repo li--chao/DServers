@@ -25,7 +25,6 @@ struct OverLap
 		uiSndFinishLen = 0;
 		uiPeerIP = 0;
 		usPeerPort = 0;
-		u64LastRecvPack = 0ULL;
 		szpComBuf = NULL;
 		uiPacketLen = 0;
 		pSndList = NULL;
@@ -78,8 +77,6 @@ struct OverLap
 
 	unsigned long long u64PacketRecv;
 	unsigned long long u64PacketSnd;
-
-	unsigned long long u64LastRecvPack;
 };
 
 class LcAbstractNet

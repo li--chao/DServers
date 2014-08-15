@@ -273,12 +273,16 @@ void LcEpollNet::EpollAccept(const int& fd, const unsigned int& uiPeerIP, const 
 	m_IONetConnQue.Pop(ptr);
 	OverLap* pOverLap = (OverLap*)ptr;
 
+	/***		初始化重叠结构，初始化的成员今后可能会扩展		****/
 	pOverLap->uiComLen = m_pBaseConfig->m_uiMaxPacketSize;
 	pOverLap->uiFinishLen = 0;
 	pOverLap->uiPeerIP = uiPeerIP;
 	pOverLap->usPeerPort = usPeerPort;
 	pOverLap->fd = fd;
-	pOverLap->u64LastRecvPack = time(0);
+	pOverLap->u64PacketRecv = 0;
+	pOverLap->u64PacketSnd = 0;
+	pOverLap->uiPacketLen = 0;
+	/***		初始化重叠结构，初始化的成员今后可能会扩展		****/
 
 	struct epoll_event ev;
 	ev.events = EPOLLIN | EPOLLET;
@@ -369,7 +373,7 @@ void LcEpollNet::EpollSend(OverLap* pOverLap)
 		}
 
 		pOverLap->u64PacketSnd += 1;
-		m_txlNetLog->Write("u64PacketSnd = %d, pSndOverLap->uiSndComLen = %d, pSndOverLap->uiSndFinishLen", pOverLap->u64PacketSnd, pSndOverLap->uiSndComLen, pSndOverLap->uiSndFinishLen);
+		m_txlNetLog->Write("u64PacketRecv = %u u64PacketSnd = %u, pSndOverLap->uiSndComLen = %u, pSndOverLap->uiSndFinishLen = %u", pOverLap->u64PacketRecv, pOverLap->u64PacketSnd, pSndOverLap->uiSndComLen, pSndOverLap->uiSndFinishLen);
 		pOverLap->pSndList = pSndOverLap->pSndList;
 		m_IONetSndMemQue.Push((long)pSndOverLap);
 		continue;
