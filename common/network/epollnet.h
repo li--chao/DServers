@@ -5,6 +5,8 @@
 #include "netcommon.h"
 #include "netqueue.h"
 #include "lcfullpktchecker.h"
+#include "../container/hashtable.h"
+
 
 class LcEpollNet : public LcAbstractNet
 {
