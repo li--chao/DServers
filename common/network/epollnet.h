@@ -46,6 +46,7 @@ private:
 	NetQueue m_IONetSndMemQue;
 //	NetQueue m_IONetSndQue;
 	LcBaseChecker* m_pChecker;
+	LcHashTable<unsigned long long, OverLap*> m_ConnectTable;
 
 	static void* Thread_NetServ(void* param);
 	void EpollAccept(const int& fd, const unsigned int& uiPeerIP, const unsigned short& usPeerPort);

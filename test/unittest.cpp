@@ -3,6 +3,8 @@
 #include "../servconfig.h"
 #include "../common/log/TextLog.h"
 #include "../common/network/netqueue.h"
+#include "../common/container/hashtable.h"
+#include "assert.h"
 
 pthread_mutex_t deadlock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -32,6 +34,26 @@ int main(int argc, char** argv)
 	pthread_mutex_lock(&deadlock);
 **/
 
-	std::cout << MEM_OFFSET_IN_CLASS(struct PacketHead, m_uiOperateCode) << std::endl;
+	LcHashTable<int, int> int_hash_table;
+	int_hash_table.Init(10747);
+	int_hash_table.Insert(2, 3);
+
+	int ret = int_hash_table.Insert(2, 3);
+	assert(ret == 2);
+
+	assert(int_hash_table.BucketCnt() == 1);
+	char *p = NULL;
+
+	int search_ret = int_hash_table.Search(2, p);
+	assert(search_ret == 0);
+	assert(*(int*)p == 3);
+
+	search_ret = int_hash_table.Search(3, p);
+	assert(search_ret == 1);
+	assert(p == NULL);
+
+	ret = int_hash_table.Insert(10749, 4);
+	assert(ret == 0);
+	assert(int_hash_table.BucketCnt() == 2);
 	return 0;
 }
