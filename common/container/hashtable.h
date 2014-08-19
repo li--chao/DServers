@@ -48,10 +48,27 @@ public:
 		unsigned int uiHashIdx = _key % m_uiMaxBucketsSize;
 		pthread_mutex_lock(&m_TableLock);
 		
-		char* szpBucket = m_szppBuckets[uiHashIdx]; 
+		char* szpBucket = m_szppBuckets[uiHashIdx];
+		char* szpPreBucket = NULL;
 		while(szpBucket)
 		{
-						
+			t_key __key;
+			LcBucket::GetBucketKey(szpBucket, __key);
+			if(__key == _key)
+			{
+				if(szpPreBucket == NULL)
+					m_szppBuckets[uiHashIdx] = LcBucket::GetNextBucketAddr(szpBucket);
+				else
+					*(char**)szpPreBucket = LcBucket::GetNextBucketAddr(szpBucket);
+				delete szpBucket;
+				szpBucket == 0;
+				m_uiBucketCnt--;
+				pthread_mutex_unlock(&m_TableLock);
+				return 0;
+			}
+
+			szpPreBucket = szpBucket;
+			szpBucket = *(char**)szpBucket;
 		}
 		pthread_mutex_unlock(&m_TableLock);
 		return 1;
