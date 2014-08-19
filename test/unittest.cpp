@@ -55,5 +55,13 @@ int main(int argc, char** argv)
 	ret = int_hash_table.Insert(10749, 4);
 	assert(ret == 0);
 	assert(int_hash_table.BucketCnt() == 2);
+
+	ret = int_hash_table.DeleteByKey(2);
+	assert(ret == 0);
+	assert(int_hash_table.BucketCnt() == 1);
+
+	ret = int_hash_table.Search(10749, p);
+	assert(ret == 0);
+	assert(*(int*)p == 4);
 	return 0;
 }

@@ -61,7 +61,7 @@ public:
 				else
 					*(char**)szpPreBucket = LcBucket::GetNextBucketAddr(szpBucket);
 				delete szpBucket;
-				szpBucket == 0;
+				szpBucket = 0;
 				m_uiBucketCnt--;
 				pthread_mutex_unlock(&m_TableLock);
 				return 0;
