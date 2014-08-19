@@ -74,6 +74,39 @@ public:
 		return 1;
 	}
 
+	int DeleteByKey(const t_key& _key, t_value& _val)
+	{
+		unsigned int uiHashIdx = _key % m_uiMaxBucketsSize;
+		pthread_mutex_lock(&m_TableLock);
+		
+		char* szpBucket = m_szppBuckets[uiHashIdx];
+		char* szpPreBucket = NULL;
+		while(szpBucket)
+		{
+			t_key __key;
+			LcBucket::GetBucketKey(szpBucket, __key);
+			if(__key == _key)
+			{
+				if(szpPreBucket == NULL)
+					m_szppBuckets[uiHashIdx] = LcBucket::GetNextBucketAddr(szpBucket);
+				else
+					*(char**)szpPreBucket = LcBucket::GetNextBucketAddr(szpBucket);
+
+			    LcBucket::GetBucketValue(szpBucket, _key, _val);	
+				delete szpBucket;
+				szpBucket = 0;
+				m_uiBucketCnt--;
+				pthread_mutex_unlock(&m_TableLock);
+				return 0;
+			}
+
+			szpPreBucket = szpBucket;
+			szpBucket = *(char**)szpBucket;
+		}
+		pthread_mutex_unlock(&m_TableLock);
+		return 1;
+	}
+
 	int Insert(const t_key& _key, const t_value& _value)
 	{
 		unsigned int uiInsertIdx = _key % m_uiMaxBucketsSize;
