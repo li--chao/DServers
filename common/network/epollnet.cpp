@@ -30,6 +30,13 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 		m_txlNetLog->Write("mutex init error");
 		return 1;
 	}
+
+	if(m_ConnectTable.Init(pBaseConfig->m_uiMaxOverLapNum))
+	{
+		m_txlNetLog->Write("connect hash table init error");
+		return 1;
+	}
+
 	m_txlNetLog = &textLog;
 	m_pBaseConfig = pBaseConfig;
 

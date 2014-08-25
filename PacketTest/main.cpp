@@ -53,10 +53,14 @@ int main(int argc, char** argv)
 	printf("testdataA = %u\n", *(unsigned int*)(cTestProtocolUn.m_szaPacketBuff + 12));
 	printf("testdataB = %u\n", *(unsigned int*)(cTestProtocolUn.m_szaPacketBuff + 16));
 
-//	while(1)
-//	{
+	TestProtocolUn cRecvTstProtcl;
+	for(int i = 0; i < 100; i++)
+	{
 		send(sock, cTestProtocolUn.m_szaPacketBuff, cTestProtocol.m_phPrtcolHead.m_uiPacketLength, MSG_NOSIGNAL);
-//	}
+		recv(sock, cRecvTstProtcl.m_szaPacketBuff, 128, 0);
+		printf("recv data: %u %u\n", cRecvTstProtcl.m_tplTestProtocol.m_uiTestDataA, cRecvTstProtcl.m_tplTestProtocol.m_uiTestDataB);
+		sleep(2);
+	}
 	
 	pthread_mutex_lock(&deadlock);
 	pthread_mutex_lock(&deadlock);
