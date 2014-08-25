@@ -16,11 +16,12 @@ public:
 	int Init(BaseConfig* pBaseConfig, TextLog& textLog);
 	int StartThread();
 	void RemoveConnect(OverLap* pOverLap);
+	void RemoveConnectByID(const unsigned long long& u64SessionID);
 	void GetRequest(long& lptr);
 	void ReleaseRequest(const long& lptr);
 	void RequestSnd(long& lptr);
 	void ReleaseSndReq(const long& lptr);
-	void SendData(const long& lptr);
+	void SendData(OverLap* pOverLap);
 	
 protected:
 	int BindAndLsn(const int& iBackLog, const unsigned short& usPort);
@@ -47,6 +48,7 @@ private:
 //	NetQueue m_IONetSndQue;
 	LcBaseChecker* m_pChecker;
 	LcHashTable<unsigned long long, OverLap*> m_ConnectTable;
+	pthread_mutex_t m_cSyncSendData;
 
 	static void* Thread_NetServ(void* param);
 	void EpollAccept(const int& fd, const unsigned int& uiPeerIP, const unsigned short& usPeerPort);

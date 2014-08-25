@@ -19,15 +19,19 @@ int TestServ::MainFun()
 		m_pExtServNet->GetRequest(lptr);
 		OverLap* pOverLap = (OverLap*)lptr;
 		unsigned int uiOperateCode = *(unsigned int*)(pOverLap->szpComBuf + OFFSET_OPERATE_LEN);
+		int ret = 0;
 		switch(uiOperateCode)
 		{
 		case TEST_PROTOCOL:
-			HandleTestProtocol(pOverLap);
+			ret = HandleTestProtocol(pOverLap);
 			break;
 
 		}
 		m_pExtServNet->ReleaseRequest(lptr);
-//		m_pExtServNet->SendData((long)pOverLap);
+		if(ret)
+		{
+			m_pExtServNet->RemoveConnectByID(pOverLap->u64SessionID);
+		}
 		
 	}
 	return 0;

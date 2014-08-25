@@ -85,11 +85,12 @@ public:
 	virtual int Init(BaseConfig* pBaseConfig, TextLog& textLog) = 0;
 	virtual int StartThread() = 0;
 	virtual void RemoveConnect(OverLap* pOverLap) = 0;
+	virtual void RemoveConnectByID(const unsigned long long& u64SessionID) = 0;
 	virtual void GetRequest(long& lptr) = 0;
 	virtual void ReleaseRequest(const long& lptr) = 0;
 	virtual void RequestSnd(long& lptr) = 0;
 	virtual void ReleaseSndReq(const long& lptr) = 0;
-	virtual void SendData(const long& lptr) = 0;
+	virtual void SendData(OverLap* pOverLap) = 0;
 
 protected:
 	int m_lsnSocket;
