@@ -43,5 +43,14 @@ int TestServ::HandleTestProtocol(OverLap* pOverLap)
 	memcpy(unTestProtocol.m_szaPacketBuff, pOverLap->szpComBuf, pOverLap->uiPacketLen);
 
 	m_pLog->Write("uiOperateCode = %u, uiPacketLen = %u, pOverLap->uiPacketLen = %u, pOverLap->u64PacketRecv = %llu, pOverLap->u64PacketSnd = %llu", unTestProtocol.m_tplTestProtocol.m_phPrtcolHead.m_uiOperateCode, unTestProtocol.m_tplTestProtocol.m_phPrtcolHead.m_uiPacketLength, pOverLap->uiPacketLen, pOverLap->u64PacketRecv, pOverLap->u64PacketSnd);
+
+	
+	long lSndAddr = 0;
+	m_pExtServNet->RequestSnd(lSndAddr);
+
+	OverLap* pSndOverLap = (OverLap*)lSndAddr;
+	pSndOverLap->u64SessionID = pOverLap->u64SessionID;
+	pSndOverLap->uiSndComLen = pOverLap->uiPacketLen;
+	m_pExtServNet->SendData(pSndOverLap);
 	return 0;
 }
