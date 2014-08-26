@@ -25,7 +25,9 @@ int TestServ::MainFun()
 		case TEST_PROTOCOL:
 			ret = HandleTestProtocol(pOverLap);
 			break;
-
+		case GET_SESSION_ID:
+			ret = HandleGetSessionID(pOverLap);
+			break;
 		}
 		m_pExtServNet->ReleaseRequest(lptr);
 		if(ret)
@@ -52,6 +54,34 @@ int TestServ::HandleTestProtocol(OverLap* pOverLap)
 	pSndOverLap->u64SessionID = pOverLap->u64SessionID;
 	pSndOverLap->uiSndComLen = pOverLap->uiPacketLen;
 	memcpy(pSndOverLap->szpComBuf, unTestProtocol.m_szaPacketBuff, pOverLap->uiPacketLen);
+	m_pExtServNet->SendData(pSndOverLap);
+	return 0;
+}
+
+int TestServ::HandleGetSessionID(OverLap* pOverLap)
+{
+	UnGetSessionID unGetSessionID;
+	memcpy(unGetSessionID.m_szaPacketBuff, pOverLap->szpComBuf, pOverLap->uiPacketLen);
+	if(!unGetSessionID.m_GetSessionID.CheckID())
+	{
+		m_pLog->Write("check identify code error when request get session id");
+		return 1;
+	}
+
+	UnGetSessionIDRespd unGetSessionIDRespd;
+	unGetSessionIDRespd.m_GetSessionIDRespd.m_phPrtcolHead.m_uiIdentifyCode = IDENTIFY_CODE;
+	unGetSessionIDRespd.m_GetSessionIDRespd.m_phPrtcolHead.m_uiOperateCode = GET_SESSION_ID;
+	unGetSessionIDRespd.m_GetSessionIDRespd.m_phPrtcolHead.m_uiPacketLength = sizeof(unGetSessionIDRespd.m_GetSessionIDRespd);
+	unGetSessionIDRespd.m_GetSessionIDRespd.m_u64SessionID = pOverLap->u64SessionID;
+	unGetSessionIDRespd.m_GetSessionIDRespd.m_usEndCode = END_CODE;
+
+	long lSndAddr = 0;
+	m_pExtServNet->RequestSnd(lSndAddr);
+
+	OverLap* pSndOverLap = (OverLap*)lSndAddr;
+	pSndOverLap->u64SessionID = pOverLap->u64SessionID;
+	pSndOverLap->uiSndComLen = sizeof(unGetSessionIDRespd.m_GetSessionIDRespd);
+	memcpy(pSndOverLap->szpComBuf, unGetSessionIDRespd.m_szaPacketBuff, pSndOverLap->uiSndComLen);
 	m_pExtServNet->SendData(pSndOverLap);
 	return 0;
 }

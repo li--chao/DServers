@@ -3,6 +3,6 @@
 
 
 #define TEST_PROTOCOL 0x00000001
-
+#define GET_SESSION_ID   0x00000002
 
 #endif
