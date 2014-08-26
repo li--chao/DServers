@@ -513,8 +513,14 @@ void LcEpollNet::SendToWorkQue(OverLap* pOverLap, const unsigned int& uiPacketLe
 	m_IONetWorkMemQue.Pop(lWorkMem);
 	OverLap* pWorkOverLap = (OverLap*)lWorkMem;
 	memcpy(pWorkOverLap->szpComBuf, pOverLap->szpComBuf, uiPacketLen);
+
 	pWorkOverLap->u64SessionID = pOverLap->u64SessionID;
 	pWorkOverLap->uiPacketLen = uiPacketLen;
+	pWorkOverLap->uiPeerIP = pOverLap->uiPeerIP;
+	pWorkOverLap->usPeerPort = pOverLap->usPeerPort;
+	pWorkOverLap->u64PacketRecv = pOverLap->u64PacketRecv;
+	pWorkOverLap->u64PacketSnd = pOverLap->u64PacketSnd;
+
 	m_IONetWorkQue.Push((long)pWorkOverLap);
 }
 

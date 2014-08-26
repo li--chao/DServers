@@ -33,36 +33,6 @@ struct OverLap
 		u64PacketSnd = 0;
 	}
 
-	void InsertIntoSndList(OverLap* pOverLap, const bool& bFromTail = true)
-	{
-		if(pSndList == NULL)
-		{
-			pSndList = pOverLap;
-			return;
-		}
-
-		OverLap* pCurrentSndList = pSndList;
-		if(bFromTail)
-		{
-			while(pCurrentSndList->pSndList)
-			{
-				pCurrentSndList = pCurrentSndList->pSndList;
-			}
-			pCurrentSndList = pOverLap;
-		}
-		else
-		{
-			OverLap* pLast = pOverLap;
-			while(pLast->pSndList)
-			{
-				pLast = pLast->pSndList;
-			}
-
-			pLast->pSndList = pCurrentSndList;
-			pOverLap->pSndList = pOverLap;
-		}
-	}
-
 	unsigned long long u64SessionID;
 	char* szpComBuf;
 	OverLap* pSndList;

@@ -69,6 +69,34 @@ union UnGetSessionIDRespd
 	char m_szaPacketBuff[MAX_PACKET_SIZE];
 };
 
+struct GetIOPacket
+{
+	PacketHead m_phPrtcolHead;
+	unsigned long long u64SessionID;
+	unsigned short m_usEndCode;
+};
+
+union UnGetIOPacket
+{
+	GetIOPacket m_GetIOPacket;
+	char m_szaPacketBuff[MAX_PACKET_SIZE];
+};
+
+struct GetIOPacketRespd
+{
+	PacketHead m_phPrtcolHead;
+	unsigned long long m_u64PacketRecv;
+	unsigned long long m_u64PacketSend;
+	unsigned short m_usEndCode;
+};
+
+union UnGetIOPacketRespd
+{
+	GetIOPacketRespd m_GetIOPacketRespd;
+	char m_szaPacketBuff[MAX_PACKET_SIZE];
+};
+
+
 #pragma pack()
 
 #define HEADSIZE sizeof(PacketHead)

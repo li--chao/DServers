@@ -20,6 +20,7 @@ private:
 private:
 	int HandleTestProtocol(OverLap* pOverLap);
 	int HandleGetSessionID(OverLap* pOverLap);
+	int HandleGetIOPacket(OverLap* pOverLap);
 };
 
 #endif

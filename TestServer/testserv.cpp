@@ -28,6 +28,9 @@ int TestServ::MainFun()
 		case GET_SESSION_ID:
 			ret = HandleGetSessionID(pOverLap);
 			break;
+		case GET_IO_PACKET:
+			ret = HandleGetIOPacket(pOverLap);
+			break;
 		}
 		m_pExtServNet->ReleaseRequest(lptr);
 		if(ret)
@@ -77,11 +80,38 @@ int TestServ::HandleGetSessionID(OverLap* pOverLap)
 
 	long lSndAddr = 0;
 	m_pExtServNet->RequestSnd(lSndAddr);
-
 	OverLap* pSndOverLap = (OverLap*)lSndAddr;
 	pSndOverLap->u64SessionID = pOverLap->u64SessionID;
 	pSndOverLap->uiSndComLen = sizeof(unGetSessionIDRespd.m_GetSessionIDRespd);
 	memcpy(pSndOverLap->szpComBuf, unGetSessionIDRespd.m_szaPacketBuff, pSndOverLap->uiSndComLen);
+	m_pExtServNet->SendData(pSndOverLap);
+	return 0;
+}
+
+int TestServ::HandleGetIOPacket(OverLap* pOverLap)
+{
+	UnGetIOPacket unGetIOPacket;
+	memcpy(unGetIOPacket.m_szaPacketBuff, pOverLap->szpComBuf, pOverLap->uiPacketLen);
+	if(unGetIOPacket.m_GetIOPacket.u64SessionID != pOverLap->u64SessionID)
+	{
+		m_pLog->Write("session id not match %llu(expected: %llu)", unGetIOPacket.m_GetIOPacket.u64SessionID, pOverLap->u64SessionID);
+		return 1;
+	}
+
+	UnGetIOPacketRespd unGetIOPacketRespd;
+	unGetIOPacketRespd.m_GetIOPacketRespd.m_phPrtcolHead.m_uiIdentifyCode = IDENTIFY_CODE;
+	unGetIOPacketRespd.m_GetIOPacketRespd.m_phPrtcolHead.m_uiOperateCode = GET_IO_PACKET;
+	unGetIOPacketRespd.m_GetIOPacketRespd.m_phPrtcolHead.m_uiPacketLength = sizeof(unGetIOPacketRespd.m_GetIOPacketRespd);
+	unGetIOPacketRespd.m_GetIOPacketRespd.m_u64PacketRecv = pOverLap->u64PacketRecv;
+	unGetIOPacketRespd.m_GetIOPacketRespd.m_u64PacketSend = pOverLap->u64PacketSnd;
+	unGetIOPacketRespd.m_GetIOPacketRespd.m_usEndCode = END_CODE;
+
+	long lSndAddr = 0;
+	m_pExtServNet->RequestSnd(lSndAddr);
+	OverLap* pSndOverLap = (OverLap*)lSndAddr;
+	pSndOverLap->u64SessionID = pOverLap->u64SessionID;
+	pSndOverLap->uiSndComLen = sizeof(unGetIOPacketRespd.m_GetIOPacketRespd);
+	memcpy(pSndOverLap->szpComBuf, unGetIOPacketRespd.m_szaPacketBuff, pSndOverLap->uiSndComLen);
 	m_pExtServNet->SendData(pSndOverLap);
 	return 0;
 }
