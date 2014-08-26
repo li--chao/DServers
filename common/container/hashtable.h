@@ -9,8 +9,6 @@ class LcHashTable
 {
 public:
 	LcHashTable() :
-		m_uiMinIndex(0),
-		m_uiMaxIndex(0),
 		m_uiMaxBucketsSize(0),
 		m_uiBucketCnt(0),
 		m_szppBuckets(NULL)
@@ -28,8 +26,6 @@ public:
 		m_uiMaxBucketsSize = uiMaxBucketsSize;
 		m_szppBuckets = new char*[uiMaxBucketsSize];
 		memset(m_szppBuckets, 0, uiMaxBucketsSize * sizeof(char*));
-		m_uiMinIndex = uiMaxBucketsSize;
-		m_uiMaxIndex = 0;
 		if(m_szppBuckets == NULL)
 		{
 			return 1;
@@ -138,15 +134,6 @@ public:
 		*(t_value*)(szpHashData + sizeof(char*) + sizeof(_key)) = _value;
 		m_szppBuckets[uiInsertIdx] = szpHashData;
 		m_uiBucketCnt++;
-		if(uiInsertIdx < m_uiMinIndex)
-		{
-			m_uiMinIndex = uiInsertIdx;
-		}
-		if(uiInsertIdx > m_uiMaxIndex)
-		{
-			m_uiMaxIndex = uiInsertIdx;
-		}
-
 		pthread_mutex_unlock(&m_TableLock);
 		return 0;
 	}
@@ -206,8 +193,6 @@ public:
 	}
 	
 private:
-	unsigned int m_uiMinIndex;
-	unsigned int m_uiMaxIndex;
 	unsigned int m_uiMaxBucketsSize;
 	unsigned int m_uiBucketCnt;
 	pthread_mutex_t m_TableLock;
