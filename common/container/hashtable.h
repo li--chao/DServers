@@ -181,6 +181,29 @@ public:
 		pthread_mutex_unlock(&m_TableLock);
 		return 1;
 	}
+
+	int Search(const t_key& _key, t_value& _val)
+	{
+		unsigned int uiBucketIdx = _key % m_uiMaxBucketsSize;
+
+		pthread_mutex_lock(&m_TableLock);
+		char* szpBucket = m_szppBuckets[uiBucketIdx];
+		while(szpBucket)
+		{
+			t_key __key;
+			LcBucket::GetBucketKey(szpBucket, __key);
+			if(__key == _key)
+			{
+				char* szpValue = LcBucket::GetBucketValue(szpBucket, __key);
+				_val = *(t_value*)szpValue;
+				pthread_mutex_unlock(&m_TableLock);
+				return 0;
+			} 
+		}
+
+		pthread_mutex_unlock(&m_TableLock);
+		return 1;
+	}
 	
 private:
 	unsigned int m_uiMinIndex;

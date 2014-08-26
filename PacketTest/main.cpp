@@ -58,7 +58,7 @@ int main(int argc, char** argv)
 	{
 		send(sock, cTestProtocolUn.m_szaPacketBuff, cTestProtocol.m_phPrtcolHead.m_uiPacketLength, MSG_NOSIGNAL);
 		recv(sock, cRecvTstProtcl.m_szaPacketBuff, 128, 0);
-		printf("recv data: %u %u\n", cRecvTstProtcl.m_tplTestProtocol.m_uiTestDataA, cRecvTstProtcl.m_tplTestProtocol.m_uiTestDataB);
+		printf("recv data: A = %u B = %u\n", cRecvTstProtcl.m_tplTestProtocol.m_uiTestDataA, cRecvTstProtcl.m_tplTestProtocol.m_uiTestDataB);
 		sleep(2);
 	}
 	

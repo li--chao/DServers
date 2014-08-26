@@ -187,10 +187,9 @@ void LcEpollNet::SendData(OverLap* pSndOverLap)
 	{
 		return;
 	}
-	char* szpOverLap = NULL;
-	if(m_ConnectTable.Search(pSndOverLap->u64SessionID, szpOverLap) == 0)
+	OverLap* pOverLap = NULL;
+	if(m_ConnectTable.Search(pSndOverLap->u64SessionID, pOverLap) == 0)
 	{
-		OverLap* pOverLap = (OverLap*)szpOverLap;
 		OverLap* pTmp = pOverLap;
 		pthread_mutex_lock(&m_cSyncSendData);
 		while(pTmp->pSndList)

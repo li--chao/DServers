@@ -51,6 +51,7 @@ int TestServ::HandleTestProtocol(OverLap* pOverLap)
 	OverLap* pSndOverLap = (OverLap*)lSndAddr;
 	pSndOverLap->u64SessionID = pOverLap->u64SessionID;
 	pSndOverLap->uiSndComLen = pOverLap->uiPacketLen;
+	memcpy(pSndOverLap->szpComBuf, unTestProtocol.m_szaPacketBuff, pOverLap->uiPacketLen);
 	m_pExtServNet->SendData(pSndOverLap);
 	return 0;
 }
