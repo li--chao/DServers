@@ -191,6 +191,27 @@ public:
 		pthread_mutex_unlock(&m_TableLock);
 		return 1;
 	}
+
+	void GetKeys(t_key *__pkey)
+	{
+		char *p;
+		unsigned int u = 0;
+		while(u < m_uiBucketCnt)
+		{
+			if(m_szppBuckets[u] == NULL)
+			{
+				continue;
+			}
+
+			p = m_szppBuckets[u];
+			while(p)
+			{
+				__pKey[u] = *(t_key)(p + sizeof(char*));
+				u++;
+				p = *(char**)p;
+			}
+		}
+	}
 	
 private:
 	unsigned int m_uiMaxBucketsSize;
