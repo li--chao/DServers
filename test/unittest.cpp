@@ -3,37 +3,13 @@
 #include "../servconfig.h"
 #include "../common/log/TextLog.h"
 #include "../common/network/netqueue.h"
-#include "../common/container/hashtable.h"
+#include "../common/container/hashtableiter.h"
 #include "assert.h"
 
 pthread_mutex_t deadlock = PTHREAD_MUTEX_INITIALIZER;
 
 int main(int argc, char** argv)
 {
-/**
-	LogConfig logCfg;
-	ServConfig servCfg;
-	strcpy(logCfg.szpLogPath, servCfg.szpLogPath);
-	strcpy(logCfg.szpLogName, servCfg.szpLogName);
-	TextLog log;
-	if(log.Init(&logCfg))
-	{
-		std::cout << "log Init error" << std::endl;
-		return 1;
-	}
-
-	log.Write("HELLO WORLD");
-	LcAbstractNet* pServNet = new LcEpollNet();
-	pServNet->Init(&servCfg, log);
-
-	daemon(1, 0);
-	pServNet->StartThread();
-
-
-	pthread_mutex_lock(&deadlock);
-	pthread_mutex_lock(&deadlock);
-**/
-
 	LcHashTable<int, int> int_hash_table;
 	int_hash_table.Init(10747);
 	int_hash_table.Insert(2, 3);
@@ -84,5 +60,19 @@ int main(int argc, char** argv)
 	assert(ret == 1);
 	assert(p == 0);
 	assert(int_hash_table.BucketCnt() == 0);
+
+	LcHashTable<int, unsigned int> testHash;
+	testHash.Init(10747);
+	testHash.Insert(2, 3);
+	testHash.Insert(4, 5);
+
+	unsigned int* pVals = new unsigned int[testHash.BucketCnt()];
+	int* pKeys = new int[testHash.BucketCnt()];
+	testHash.GetValues(pVals);
+	testHash.GetKeys(pKeys);
+	assert(pVals[0] == 3);
+	assert(pVals[1] == 5);
+	assert(pKeys[0] == 2);
+	assert(pKeys[1] == 4);
 	return 0;
 }

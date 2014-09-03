@@ -192,27 +192,54 @@ public:
 		return 1;
 	}
 
-	void GetKeys(t_key *__pkey)
+	void GetKeys(t_key *__pKey)
 	{
 		char *p;
 		unsigned int u = 0;
-		while(u < m_uiBucketCnt)
+		unsigned int uiCurBucketCnt = 0;
+		while(uiCurBucketCnt < m_uiBucketCnt)
 		{
 			if(m_szppBuckets[u] == NULL)
 			{
+				u++;
 				continue;
 			}
 
 			p = m_szppBuckets[u];
 			while(p)
 			{
-				__pKey[u] = *(t_key)(p + sizeof(char*));
-				u++;
+				__pKey[uiCurBucketCnt++] = *(t_key*)(p + sizeof(char*));
 				p = *(char**)p;
 			}
+
+			u++;
 		}
 	}
-	
+
+	void GetValues(t_value *__pVal)
+	{
+		char* p;
+		unsigned int u = 0;
+		unsigned int uiCurBucketCnt = 0;
+		while(uiCurBucketCnt < m_uiBucketCnt)
+		{
+			if(m_szppBuckets[u] == NULL)
+			{
+				u++;
+				continue;
+			}
+
+			p = m_szppBuckets[u];
+			while(p)
+			{
+				__pVal[uiCurBucketCnt++] = *(t_value*)(p + sizeof(char*) + sizeof(t_key));
+				p = *(char**)p;
+			}
+			
+			u++;
+		}
+	}
+
 private:
 	unsigned int m_uiMaxBucketsSize;
 	unsigned int m_uiBucketCnt;
