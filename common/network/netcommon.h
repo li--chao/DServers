@@ -31,6 +31,7 @@ struct OverLap
 
 		u64PacketRecv = 0;
 		u64PacketSnd = 0;
+		u64HeartBeatRecv = 0;
 	}
 
 	unsigned long long u64SessionID;
@@ -47,6 +48,7 @@ struct OverLap
 
 	unsigned long long u64PacketRecv;
 	unsigned long long u64PacketSnd;
+	unsigned long long u64HeartBeatRecv;
 };
 
 class LcAbstractNet

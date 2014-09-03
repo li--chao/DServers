@@ -254,6 +254,7 @@ int LcEpollNet::BindAndLsn(const int& iBackLog, const unsigned short& usPort)
 int LcEpollNet::StartThread()
 {
 	pthread_t posix_thrd;
+	pthread_t heartbeat_thrd;
 	int ret = pthread_create(&posix_thrd, NULL, Thread_NetServ, this);
 	if(ret)
 	{
@@ -261,6 +262,12 @@ int LcEpollNet::StartThread()
 		return -1;
 	}
 
+	ret = pthread_create(&heartbeat_thrd, NULL, Thread_HeartBeat, this);
+	if(ret)
+	{
+		m_txlNetLog->Write("pthread_create Thread_HeartBeat error!");
+		return -1;
+	}
 	return 0;
 }
 
@@ -320,6 +327,16 @@ void* LcEpollNet::Thread_NetServ(void* param)
 	return NULL;
 }
 
+void* LcEpollNet::Thread_HeartBeat(void* param)
+{
+	LcEpollNet* pNet = (LcEpollNet*)param;
+	while(1)
+	{
+
+	}
+	return NULL;
+}
+
 void LcEpollNet::EpollAccept(const int& fd, const unsigned int& uiPeerIP, const unsigned short& usPeerPort)
 {
 	long ptr = 0;
@@ -335,6 +352,7 @@ void LcEpollNet::EpollAccept(const int& fd, const unsigned int& uiPeerIP, const 
 	pOverLap->u64PacketRecv = 0;
 	pOverLap->u64PacketSnd = 0;
 	pOverLap->uiPacketLen = 0;
+	pOverLap->u64HeartBeatRecv = time(NULL);
 	/***		初始化重叠结构，初始化的成员今后可能会扩展		****/
 
 	struct epoll_event ev;

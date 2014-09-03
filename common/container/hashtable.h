@@ -197,6 +197,7 @@ public:
 		char *p;
 		unsigned int u = 0;
 		unsigned int uiCurBucketCnt = 0;
+		pthread_mutex_lock(&m_TableLock);
 		while(uiCurBucketCnt < m_uiBucketCnt)
 		{
 			if(m_szppBuckets[u] == NULL)
@@ -214,6 +215,7 @@ public:
 
 			u++;
 		}
+		pthread_mutex_unlock(&m_TableLock);
 	}
 
 	void GetValues(t_value *__pVal)
@@ -221,6 +223,7 @@ public:
 		char* p;
 		unsigned int u = 0;
 		unsigned int uiCurBucketCnt = 0;
+		pthread_mutex_lock(&m_TableLock);
 		while(uiCurBucketCnt < m_uiBucketCnt)
 		{
 			if(m_szppBuckets[u] == NULL)
@@ -238,6 +241,7 @@ public:
 			
 			u++;
 		}
+		pthread_mutex_unlock(&m_TableLock);
 	}
 
 private:

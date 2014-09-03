@@ -12,6 +12,8 @@ TestServConfig::TestServConfig()
     m_uiMaxOverLapNum = DEFAULT_MAX_OVERLAP_NUM;
     strcpy(szpLogName, DEFAULT_LOG_NAME);
 	strcpy(szpLogPath, DEFAULT_FILE_PATH_NAME);
+
+	m_uiHeartBeatInterval = HEART_BEAT_INTERVAL;
 }
 
 TestServConfig::~TestServConfig()

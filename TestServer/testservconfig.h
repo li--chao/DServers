@@ -13,7 +13,7 @@
 #define DEFAULT_FILE_PATH_NAME "./logs/"
 #define DEFAULT_BACK_LOG 20
 #define DEFAULT_MAX_OVERLAP_NUM 10240
-
+#define HEART_BEAT_INTERVAL 4
 
 
 class TestServConfig : public BaseConfig
