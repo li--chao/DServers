@@ -65,14 +65,17 @@ int main(int argc, char** argv)
 	testHash.Init(10747);
 	testHash.Insert(2, 3);
 	testHash.Insert(4, 5);
+	testHash.Insert(10749, 15);
 
 	unsigned int* pVals = new unsigned int[testHash.BucketCnt()];
 	int* pKeys = new int[testHash.BucketCnt()];
 	testHash.GetValues(pVals);
 	testHash.GetKeys(pKeys);
-	assert(pVals[0] == 3);
-	assert(pVals[1] == 5);
-	assert(pKeys[0] == 2);
-	assert(pKeys[1] == 4);
+	assert(pVals[0] == 15);
+	assert(pVals[1] == 3);
+	assert(pVals[2] == 5);
+	assert(pKeys[0] == 10749);
+	assert(pKeys[1] == 2);
+	assert(pKeys[2] == 4);
 	return 0;
 }
