@@ -10,6 +10,7 @@ LcEpollNet::LcEpollNet()
 	m_pIORecvQueue = NULL;
 	m_pIOWorkQueue = NULL;
 	m_pIOSndQueue = NULL;
+	m_ppConnOverLaps = NULL;
 	m_epSocket = -1;
 	m_pEpollEvs = NULL;
 	m_szpRecvPackMem = NULL;
@@ -71,6 +72,7 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 	m_pIORecvQueue = new OverLap[pBaseConfig->m_uiMaxOverLapNum];
 	m_pIOWorkQueue = new OverLap[pBaseConfig->m_uiMaxOverLapNum];
 	m_pIOSndQueue = new OverLap[pBaseConfig->m_uiMaxOverLapNum];
+	m_ppConnOverLaps = new OverLap*[pBaseConfig->m_uiMaxOverLapNum];
 
 	m_szpRecvPackMem = new char [pBaseConfig->m_uiMaxOverLapNum * pBaseConfig->m_uiMaxPacketSize];
 	m_szpWorkPackMem = new char [pBaseConfig->m_uiMaxOverLapNum * pBaseConfig->m_uiMaxPacketSize];
@@ -80,7 +82,7 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 
 	if(m_pIORecvQueue == NULL || m_pIOWorkQueue == NULL || m_pIOSndQueue == NULL ||
 	   m_szpRecvPackMem == NULL || m_szpWorkPackMem == NULL || m_szpSndPackMem == NULL || 
-	   m_pEpollEvs == NULL || m_pChecker == NULL)
+	   m_pEpollEvs == NULL || m_pChecker == NULL || m_ppConnOverLaps == NULL)
 	{
 		m_txlNetLog->Write("no enough memory for server!");
 		return -1;
@@ -332,7 +334,8 @@ void* LcEpollNet::Thread_HeartBeat(void* param)
 	LcEpollNet* pNet = (LcEpollNet*)param;
 	while(1)
 	{
-
+		
+		sleep(pNet->m_pBaseConfig->m_uiHeartBeatInterval);
 	}
 	return NULL;
 }

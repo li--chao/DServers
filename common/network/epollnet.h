@@ -35,6 +35,7 @@ private:
 	OverLap* m_pIORecvQueue;
 	OverLap* m_pIOWorkQueue;
 	OverLap* m_pIOSndQueue;
+	OverLap**	m_ppConnOverLaps;
 	int m_epSocket;
 	struct epoll_event *m_pEpollEvs;
 	char* m_szpRecvPackMem;
