@@ -192,7 +192,7 @@ public:
 		return 1;
 	}
 
-	void GetKeys(t_key *__pKey)
+	void GetKeys(t_key *__pKey, unsigned int& uiBucketCnt)
 	{
 		char *p;
 		unsigned int u = 0;
@@ -215,10 +215,12 @@ public:
 
 			u++;
 		}
+
+		uiBucketCnt = uiCurBucketCnt;
 		pthread_mutex_unlock(&m_TableLock);
 	}
 
-	void GetValues(t_value *__pVal)
+	void GetValues(t_value *__pVal, unsigned int& uiBucketCnt)
 	{
 		char* p;
 		unsigned int u = 0;
@@ -241,6 +243,8 @@ public:
 			
 			u++;
 		}
+
+		uiBucketCnt = uiCurBucketCnt;
 		pthread_mutex_unlock(&m_TableLock);
 	}
 

@@ -334,7 +334,14 @@ void* LcEpollNet::Thread_HeartBeat(void* param)
 	LcEpollNet* pNet = (LcEpollNet*)param;
 	while(1)
 	{
-		
+		unsigned int uiConnNum = 0;
+		pNet->m_ConnectTable.GetValues(pNet->m_ppConnOverLaps, uiConnNum);
+		unsigned long long tNow = time(NULL);
+		for(unsigned int u = 0; u < uiConnNum; u++)
+		{
+			OverLap* pOverLap = pNet->m_ppConnOverLaps[u];
+			pNet->m_txlNetLog->Write("Connect %llu HeartBeatRecv: %u", pOverLap->u64SessionID, tNow - pOverLap->u64HeartBeatRecv);
+		}
 		sleep(pNet->m_pBaseConfig->m_uiHeartBeatInterval);
 	}
 	return NULL;
