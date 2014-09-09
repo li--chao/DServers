@@ -96,6 +96,19 @@ union UnGetIOPacketRespd
 	char m_szaPacketBuff[MAX_PACKET_SIZE];
 };
 
+struct HeartBeat
+{
+	PacketHead m_phPrtcolHead;
+	unsigned long long m_u64TimeStamp;
+	unsigned long long m_u64SessionID;
+	unsigned short m_usEndCode;
+};
+
+union UnHeartBeat
+{
+	HeartBeat m_HeartBeat;
+	char m_szaPacketBuff[MAX_PACKET_SIZE];
+};
 
 #pragma pack()
 

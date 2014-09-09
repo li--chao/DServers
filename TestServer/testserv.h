@@ -21,6 +21,7 @@ private:
 	int HandleTestProtocol(OverLap* pOverLap);
 	int HandleGetSessionID(OverLap* pOverLap);
 	int HandleGetIOPacket(OverLap* pOverLap);
+	int HandleHeartBeat(OverLap* pOverLap);
 };
 
 #endif

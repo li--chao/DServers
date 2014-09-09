@@ -340,7 +340,10 @@ void* LcEpollNet::Thread_HeartBeat(void* param)
 		for(unsigned int u = 0; u < uiConnNum; u++)
 		{
 			OverLap* pOverLap = pNet->m_ppConnOverLaps[u];
-			pNet->m_txlNetLog->Write("Connect %llu HeartBeatRecv: %u", pOverLap->u64SessionID, tNow - pOverLap->u64HeartBeatRecv);
+			if(tNow - pOverLap->u64HeartBeatRecv > pNet->m_pBaseConfig->m_uiHeartBeatInterval)
+			{
+				pNet->m_txlNetLog->Write("Connect %llu HeartBeat OverTime", pOverLap->u64SessionID);
+			}
 		}
 		sleep(pNet->m_pBaseConfig->m_uiHeartBeatInterval);
 	}
@@ -537,6 +540,12 @@ int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 void LcEpollNet::SendToWorkQue(OverLap* pOverLap, const unsigned int& uiPacketLen)
 {
 	pOverLap->u64PacketRecv += 1;		// 收包数+1
+	if(*(unsigned int*)(pOverLap->szpComBuf + 4) == HEART_BEAT)
+	{
+		m_txlNetLog->Write("recv heart beat packet");
+		pOverLap->u64HeartBeatRecv = time(NULL);
+		// to do close connect
+	}
 	long lWorkMem = 0;
 	m_IONetWorkMemQue.Pop(lWorkMem);
 	OverLap* pWorkOverLap = (OverLap*)lWorkMem;

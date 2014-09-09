@@ -93,7 +93,19 @@ int main(int argc, char** argv)
 		printf("packet recv = %llu\n", unGetIOPacketRespd.m_GetIOPacketRespd.m_u64PacketRecv);
 		printf("packet send = %llu\n", unGetIOPacketRespd.m_GetIOPacketRespd.m_u64PacketSend);
 	}
-	
+
+	UnHeartBeat heartBeatPack;
+	heartBeatPack.m_HeartBeat.m_phPrtcolHead.m_uiIdentifyCode = IDENTIFY_CODE;
+	heartBeatPack.m_HeartBeat.m_phPrtcolHead.m_uiOperateCode = HEART_BEAT;
+	heartBeatPack.m_HeartBeat.m_phPrtcolHead.m_uiPacketLength = sizeof(heartBeatPack.m_HeartBeat);
+	heartBeatPack.m_HeartBeat.m_u64TimeStamp = time(NULL);
+	heartBeatPack.m_HeartBeat.m_u64SessionID = unGetSessionIDRespd.m_GetSessionIDRespd.m_u64SessionID;
+	heartBeatPack.m_HeartBeat.m_usEndCode = END_CODE;
+	while(1)
+	{
+		send(sock, heartBeatPack.m_szaPacketBuff, sizeof(heartBeatPack.m_HeartBeat), 0);
+		sleep(3);
+	}
 	pthread_mutex_lock(&deadlock);
 	pthread_mutex_lock(&deadlock);
 

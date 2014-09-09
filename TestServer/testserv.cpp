@@ -31,6 +31,9 @@ int TestServ::MainFun()
 		case GET_IO_PACKET:
 			ret = HandleGetIOPacket(pOverLap);
 			break;
+		case HEART_BEAT:
+			ret = HandleHeartBeat(pOverLap);
+			break;
 		}
 		m_pExtServNet->ReleaseRequest(lptr);
 		if(ret)
@@ -113,5 +116,13 @@ int TestServ::HandleGetIOPacket(OverLap* pOverLap)
 	pSndOverLap->uiSndComLen = sizeof(unGetIOPacketRespd.m_GetIOPacketRespd);
 	memcpy(pSndOverLap->szpComBuf, unGetIOPacketRespd.m_szaPacketBuff, pSndOverLap->uiSndComLen);
 	m_pExtServNet->SendData(pSndOverLap);
+	return 0;
+}
+
+int TestServ::HandleHeartBeat(OverLap* pOverLap)
+{
+
+	m_pLog->Write("HandleHeartBeat");
+
 	return 0;
 }
