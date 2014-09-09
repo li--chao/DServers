@@ -46,7 +46,6 @@ private:
 	NetQueue m_IONetWorkMemQue;
 	NetQueue m_IONetWorkQue;
 	NetQueue m_IONetSndMemQue;
-//	NetQueue m_IONetSndQue;
 	LcBaseChecker* m_pChecker;
 	LcHashTable<unsigned long long, OverLap*> m_ConnectTable;
 	pthread_mutex_t m_cSyncSendData;

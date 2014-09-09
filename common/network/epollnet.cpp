@@ -343,6 +343,7 @@ void* LcEpollNet::Thread_HeartBeat(void* param)
 			if(tNow - pOverLap->u64HeartBeatRecv > pNet->m_pBaseConfig->m_uiHeartBeatInterval)
 			{
 				pNet->m_txlNetLog->Write("Connect %llu HeartBeat OverTime", pOverLap->u64SessionID);
+				// to do close connect
 			}
 		}
 		sleep(pNet->m_pBaseConfig->m_uiHeartBeatInterval);
@@ -544,7 +545,6 @@ void LcEpollNet::SendToWorkQue(OverLap* pOverLap, const unsigned int& uiPacketLe
 	{
 		m_txlNetLog->Write("recv heart beat packet");
 		pOverLap->u64HeartBeatRecv = time(NULL);
-		// to do close connect
 	}
 	long lWorkMem = 0;
 	m_IONetWorkMemQue.Pop(lWorkMem);
