@@ -3,13 +3,22 @@
 
 #include "netnode.h"
 #include "../io/FileUtil.h"
+#include "../container/hashtable.h"
+
+enum EClusterType
+{
+	E_ClusterType_None = -1,
+	E_ClusterType_A,
+	E_ClusterType_B
+};
+
 
 struct Cluster
 {
 	Cluster() :
 	m_iNodeNum(0),
 	m_iMaxNodeNum(-1),
-	m_pNetNode(NULL)
+	m_eClusterType(E_ClusterType_None)
 	{
 
 	}
@@ -39,26 +48,25 @@ struct Cluster
 			if(strcmp(szaFileBuff, "MaxNodeNum") == 0)
 			{
 				m_iMaxNodeNum = atoi(szpValue);
-				m_pNetNode = new NetNode[m_iMaxNodeNum];
-				if(m_pNetNode == NULL)
+				if(m_NetNodeTable.Init(m_iMaxNodeNum))
 				{
 					return 1;
 				}
 			}
 			else if(strcmp(szaFileBuff, "Node") == 0)
 			{
-				if(m_iNodeNum == m_iMaxNodeNum)
+				if(m_NetNodeTable.BucketCnt() == (unsigned int)m_iMaxNodeNum)
 				{
 					break;
 				}
-				else if(m_iMaxNodeNum == -1 || m_pNetNode == NULL)
+				else if(m_iMaxNodeNum == -1)
 				{
 					fclose(fp);
 					return 2;
 				}
 				char *szpIP = NULL;
 				char *szpPort = NULL;
-				GetNodeInfo(szpValue, szpIP, szpPort, &m_pNetNode[m_iNodeNum]);
+				GetNodeInfo(szpValue, szpIP, szpPort);
 			}
 
 		}
@@ -66,12 +74,30 @@ struct Cluster
 		return 0;
 	}
 
+	static unsigned long long MkPeerID(char* szpIP, const unsigned short& usPort)
+	{
+		char szaTmp[6];
+		unsigned int uiNodeIP = inet_addr(szpIP);
+		*(unsigned int*)szaTmp = uiNodeIP;
+		*(unsigned short*)(szaTmp + sizeof(uiNodeIP)) = usPort;
+		return *(unsigned long long*)szaTmp;
+	}
+
+	static unsigned long long MkPeerID(const unsigned int& uiPeerIP, const unsigned short& usPort)
+	{
+		char szaTmp[6];
+		*(unsigned int*)szaTmp = uiPeerIP;
+		*(unsigned short*)(szaTmp + sizeof(uiPeerIP)) = usPort;
+		return *(unsigned long long*)szaTmp;
+	}
+
 	int m_iNodeNum;
 	int m_iMaxNodeNum;
-	NetNode* m_pNetNode;
+	LcHashTable<unsigned long long, NetNode> m_NetNodeTable;
+	EClusterType m_eClusterType;
 
 private:
-	void GetNodeInfo(char* szpSrc, char*& szpIP, char*& szpPort, NetNode* pNetNode)
+	void GetNodeInfo(char* szpSrc, char*& szpIP, char*& szpPort)
 	{
 		char* p = strchr(szpSrc, ':');
 		if(!p || *(p + 1) == 0)
@@ -79,11 +105,17 @@ private:
 			return;
 		}
 
-		strncpy(pNetNode->szaNodeIP, szpSrc, p - szpSrc);
-		pNetNode->szaNodeIP[p - szpSrc] = '\0';
-		pNetNode->usNodePort = (unsigned short)atoi(p + 1);
-		pNetNode->eNodeStatus = E_Node_Status_Stop;
+		char szaTmp[6];
+		NetNode node;
+		strncpy(node.szaNodeIP, szpSrc, p - szpSrc);
+		node.szaNodeIP[p - szpSrc] = '\0';
+		unsigned int uiNodeIP = inet_addr(node.szaNodeIP);
+		node.usNodePort = (unsigned short)atoi(p + 1);
+		*(unsigned int*)szaTmp = uiNodeIP;
+		*(unsigned short*)(szaTmp + sizeof(uiNodeIP)) = node.usNodePort;
+		m_NetNodeTable.Insert(*(unsigned long long*)szaTmp, node);
 		m_iNodeNum++;
+
 	}
 };
 

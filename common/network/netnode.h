@@ -9,11 +9,19 @@ enum ENodeStatus
 
 struct NetNode
 {
+	NetNode() :
+	eNodeStatus(E_Node_Status_Stop),
+	fd(-1),
+	NodeNo(-1)
+	{
+
+	}
 
 	ENodeStatus eNodeStatus;
 	char szaNodeIP[16];
 	unsigned short usNodePort;
-
+	int fd;
+	int NodeNo;
 };
 
 #endif
