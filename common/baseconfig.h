@@ -1,8 +1,10 @@
 #ifndef BASE_CONFIG_H
 #define BASE_CONFIG_H
 
+#include <stdio.h>
 #include "BaseCommon.h"
 #include "packet.h"
+#include "io/FileUtil.h"
 
 class BaseConfig
 {
