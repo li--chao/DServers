@@ -16,6 +16,7 @@ TestServConfig::TestServConfig()
 
 	m_uiHeartBeatInterval = HEART_BEAT_INTERVAL;
 **/
+	//m_eClusterType = E_ClusterType_None;
 }
 
 TestServConfig::~TestServConfig()
@@ -78,9 +79,25 @@ int TestServConfig::ReadCfgFile(const char* szpFileName)
 		{
 			m_iBackLog = atoi(szpValue);
 		}
+		else if(strcmp(szaFileBuff, "ServerType") == 0)
+		{
+			m_eClusterType = (EClusterType)atoi(szpValue);
+		}
 		else if(strcmp(szaFileBuff, "BServerCfgFile") == 0)
 		{
 			strcpy(szaBServClusterCfgFile, szpValue);
+		}
+		else if(strcmp(szaFileBuff, "HeartBeatSndInterval") == 0)
+		{
+			m_uiHeartBeatSndInterval = (unsigned int)atoi(szpValue);
+		}
+		else if(strcmp(szaFileBuff, "MaxCliOverlapNum") == 0)
+		{
+			m_uiCliMaxOverLapNum = (unsigned int)atoi(szpValue);
+		}
+		else if(strcmp(szaFileBuff, "MaxCliConcurrentNum") == 0)
+		{
+			m_uiCliConcurrentNum = (unsigned int)atoi(szpValue);
 		}
 	}
 

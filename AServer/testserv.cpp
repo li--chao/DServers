@@ -5,10 +5,11 @@ TestServ::TestServ()
 
 }
 
-TestServ::TestServ(TextLog* pLog, LcAbstractNet* pServNet)
+TestServ::TestServ(TextLog* pLog, LcAbstractNet* pServNet, LcEpollCli* pCli)
 {
 	m_pLog = pLog;
 	m_pExtServNet = pServNet;
+	m_pIntCli = pCli;
 }
 
 int TestServ::MainFun()

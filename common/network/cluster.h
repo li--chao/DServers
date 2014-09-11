@@ -4,21 +4,24 @@
 #include "netnode.h"
 #include "../io/FileUtil.h"
 #include "../container/hashtable.h"
+#include "netcommon.h"
 
 enum EClusterType
 {
 	E_ClusterType_None = -1,
 	E_ClusterType_A,
-	E_ClusterType_B
+	E_ClusterType_B,
+	E_Cluster_Num
 };
 
 
 struct Cluster
 {
-	Cluster() :
+	Cluster(LcAbstractCli* pCli = NULL) :
 	m_iNodeNum(0),
 	m_iMaxNodeNum(-1),
-	m_eClusterType(E_ClusterType_None)
+	m_eClusterType(E_ClusterType_None),
+	m_pCli(pCli)
 	{
 
 	}
@@ -95,6 +98,7 @@ struct Cluster
 	int m_iMaxNodeNum;
 	LcHashTable<unsigned long long, NetNode> m_NetNodeTable;
 	EClusterType m_eClusterType;
+	LcAbstractCli *m_pCli;
 
 private:
 	void GetNodeInfo(char* szpSrc, char*& szpIP, char*& szpPort)

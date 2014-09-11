@@ -71,4 +71,10 @@ protected:
 	virtual int BindAndLsn(const int& iBackLog, const unsigned short& usPort) = 0;
 };
 
+class LcAbstractCli
+{
+
+
+};
+
 #endif

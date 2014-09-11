@@ -20,6 +20,10 @@ public:
 	unsigned int m_uiHeadPacketSize;
 	unsigned int m_uiMaxOverLapNum;
 	unsigned int m_uiHeartBeatInterval;
+
+	unsigned int m_uiCliMaxOverLapNum;
+	unsigned int m_uiCliConcurrentNum;
+	unsigned int m_uiHeartBeatSndInterval;
 	int m_iBackLog;
 };
 
