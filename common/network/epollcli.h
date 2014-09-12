@@ -36,7 +36,6 @@ private:
 	LcBaseChecker* m_pChecker;
 
 private:
-	static void* Thread_HeartBeatSnd(void* vparam);
 	static void* Thread_EpollNet(void* vparam);
 };
 

@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	TestServ serv(&log, pServNet, pEpollCli);
+	TestServ serv(&log, pServNet, cCluster, &servCfg);
 	if(pServNet->StartThread())
 	{
 		log.Write("pServNet StartThread error");
@@ -67,6 +67,12 @@ int main(int argc, char** argv)
 	if(pEpollCli->StartThread())
 	{
 		log.Write("pEpollCli StartThread error");
+		return 1;
+	}
+
+	if(serv.StartThread())
+	{
+		log.Write("TestServ StartThread error");
 		return 1;
 	}
 

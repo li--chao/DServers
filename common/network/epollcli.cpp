@@ -72,27 +72,6 @@ int LcEpollCli::StartThread()
 	return ret;
 }
 
-void* LcEpollCli::Thread_HeartBeatSnd(void* vparam)
-{
-/**
-	LcEpollCli* pNetCli = (LcEpollCli*)vparam;
-	while(1)
-	{
-		for(int i = 0; i < (int)E_ClusterType_Num; i++)
-		{
-			if(i == (int)pNetCli->m_pBaseConfig->m_eClusterType || pNetCli->m_pClusters[i].m_eClusterType == E_ClusterType_None)
-			{
-				continue;
-			}
-			pNetCli->m_pCoreLog->Write("send heart beat to cluster %d", i);
-		}
-
-		sleep(pNetCli->m_pBaseConfig->m_uiHeartBeatSndInterval);
-	}
-**/
-	return NULL;
-}
-
 void* LcEpollCli::Thread_EpollNet(void* vparam)
 {
 	LcEpollCli* pCliNet = (LcEpollCli*)vparam;

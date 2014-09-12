@@ -104,6 +104,7 @@ private:
 		char szaTmp[6];
 		NetNode node;
 		strncpy(node.szaNodeIP, szpSrc, p - szpSrc);
+		node.NodeNo = m_iNodeNum;
 		node.szaNodeIP[p - szpSrc] = '\0';
 		unsigned int uiNodeIP = inet_addr(node.szaNodeIP);
 		node.usNodePort = (unsigned short)atoi(p + 1);

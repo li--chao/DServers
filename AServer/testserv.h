@@ -12,20 +12,23 @@ class TestServ
 {
 public:
 	TestServ();
-	TestServ(TextLog* pLog, LcAbstractNet* pServNet, LcEpollCli* pCli);
+	TestServ(TextLog* pLog, LcAbstractNet* pServNet, Cluster* pClusters, BaseConfig* pBaseConfig);
 	int MainFun();
+	int StartThread();
 
 private:
 	TextLog* m_pLog;
 	LcAbstractNet* m_pExtServNet;
 	Cluster* m_pClusters;
-	LcEpollCli* m_pIntCli;
+	BaseConfig* m_pBaseConfig;
 
 private:
 	int HandleTestProtocol(OverLap* pOverLap);
 	int HandleGetSessionID(OverLap* pOverLap);
 	int HandleGetIOPacket(OverLap* pOverLap);
 	int HandleHeartBeat(OverLap* pOverLap);
+
+	static void* Thread_HeartBeat(void* vparam);
 };
 
 #endif
