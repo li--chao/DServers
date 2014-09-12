@@ -75,7 +75,7 @@ struct Cluster
 		return 0;
 	}
 
-	static unsigned long long MkPeerID(char* szpIP, const unsigned short& usPort)
+	static unsigned long long MkPeerID(const char* szpIP, const unsigned short& usPort)
 	{
 		char szaTmp[6];
 		unsigned int uiNodeIP = inet_addr(szpIP);
@@ -102,12 +102,17 @@ struct Cluster
 		for(unsigned int u = 0; u < uiNodeCount; u++)
 		{
 			long lAddr = 0;
-			m_pCli->RequestSnd(lAddr);
-			OverLap* pOverLap = (OverLap*)lAddr;
 			if(szaNetNode[u].fd == -1)
 			{
-				m_pCli->Connect(szaNetNode[u].szaNodeIP, szaNetNode[u].usNodePort, szaNetNode[u].fd);
+				if(m_pCli->Connect(szaNetNode[u].szaNodeIP, szaNetNode[u].usNodePort, szaNetNode[u].fd))
+				{
+					printf("connect to cluster %d, node %s:%u failed\n", m_eClusterType, szaNetNode[u].szaNodeIP, szaNetNode[u].usNodePort);
+					continue;
+				}
 			}
+
+			m_pCli->RequestSnd(lAddr);
+			OverLap* pOverLap = (OverLap*)lAddr;
 			m_pCli->PushRequest(szaNetNode[u].fd, pOverLap);
 		}
 		pthread_mutex_unlock(&m_clustermtx);

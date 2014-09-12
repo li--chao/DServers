@@ -1,4 +1,5 @@
 #include "epollcli.h"
+#include "cluster.h"
 
 LcEpollCli::LcEpollCli() :
 m_pBaseConfig(NULL)
@@ -43,6 +44,11 @@ int LcEpollCli::Init(BaseConfig* pBaseConfig, TextLog* pLog)
 		return -1;
 	}
 
+	if(m_ConnTable.Init(pBaseConfig->m_uiCliMaxOverLapNum))
+	{
+		return -1;
+	}
+
 	for(unsigned int u = 0; u < pBaseConfig->m_uiCliMaxOverLapNum; u++)
 	{
 		m_pIORecvQue[u].szpComBuf = m_szpRecvPackMem + (u * pBaseConfig->m_uiMaxPacketSize);
@@ -59,6 +65,7 @@ int LcEpollCli::Init(BaseConfig* pBaseConfig, TextLog* pLog)
 	{
 		return 1;
 	}
+
 	return 0;
 }
 
@@ -85,6 +92,47 @@ int LcEpollCli::PushRequest(const int& fd, OverLap* pOverLap)
 
 int LcEpollCli::Connect(const char* szpNodeIP, const unsigned short& usNodePort, int& fd)
 {
+	fd = socket(AF_INET, SOCK_STREAM, 0);
+	if(fd == -1)
+	{
+		return -1;
+	}
+
+	sockaddr_in nodeSockAddr;
+	nodeSockAddr.sin_family = AF_INET;
+	nodeSockAddr.sin_addr.s_addr = inet_addr(szpNodeIP);
+	nodeSockAddr.sin_port = htons(usNodePort);
+
+	while(connect(fd, (sockaddr*)&nodeSockAddr, sizeof(nodeSockAddr)) == -1)
+	{
+		if(errno == EINTR || errno == EINPROGRESS)
+		{
+			continue;
+		}
+
+		close(fd);
+		fd = -1;
+		return 1;
+	}
+
+	long lAddr = 0;
+	m_IONetConnQue.Pop(lAddr);
+	OverLap* pOverLap = (OverLap*)lAddr;
+	struct epoll_event ev;
+	ev.events = EPOLLIN | EPOLLET;
+	ev.data.ptr = (void*)pOverLap;
+
+	if(epoll_ctl(m_epSocket, EPOLL_CTL_ADD, fd, &ev) == -1)
+	{
+		m_IONetConnQue.Push((long)pOverLap);
+		close(fd);
+		return 2;
+	}
+
+	pOverLap->fd = fd;
+	pOverLap->u64SessionID = Cluster::MkPeerID(szpNodeIP, usNodePort);
+	m_ConnTable.Insert(pOverLap->u64SessionID, pOverLap);
+
 	return 0;
 }
 

@@ -5,6 +5,7 @@
 #include "netcommon.h"
 #include "netqueue.h"
 #include "lcfullpktchecker.h"
+#include "../container/hashtable.h"
 
 
 class LcEpollCli : public LcAbstractCli
@@ -36,6 +37,8 @@ private:
 	NetQueue m_IONetSndQue;
 
 	LcBaseChecker* m_pChecker;
+
+	LcHashTable<unsigned long long, OverLap*> m_ConnTable;
 
 private:
 	static void* Thread_EpollNet(void* vparam);
