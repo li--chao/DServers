@@ -1,4 +1,2 @@
 MaxNodeNum=10
-Node=192.168.0.224:880
-Node=192.168.0.224:881
-Node=ipfeajf:eij
+Node=192.168.0.224:3050

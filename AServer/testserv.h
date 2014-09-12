@@ -7,6 +7,7 @@
 #include "testservconfig.h"
 #include "../common/packet.h"
 
+
 class TestServ
 {
 public:
@@ -17,6 +18,7 @@ public:
 private:
 	TextLog* m_pLog;
 	LcAbstractNet* m_pExtServNet;
+	Cluster* m_pClusters;
 	LcEpollCli* m_pIntCli;
 
 private:

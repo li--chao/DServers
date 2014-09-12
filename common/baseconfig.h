@@ -6,6 +6,15 @@
 #include "packet.h"
 #include "io/FileUtil.h"
 
+
+enum EClusterType
+{
+	E_ClusterType_None = -1,
+	E_ClusterType_A,
+	E_ClusterType_B,
+	E_ClusterType_Num
+};
+
 class BaseConfig
 {
 public:
@@ -25,6 +34,7 @@ public:
 	unsigned int m_uiCliConcurrentNum;
 	unsigned int m_uiHeartBeatSndInterval;
 	int m_iBackLog;
+	EClusterType m_eClusterType;
 };
 
 #endif

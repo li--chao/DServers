@@ -12,13 +12,12 @@ class LcEpollCli : public LcAbstractCli
 {
 public:
 	LcEpollCli();
-	int Init(BaseConfig* pBaseConfig, TextLog* pLog, Cluster* pCluster);
+	int Init(BaseConfig* pBaseConfig, TextLog* pLog);
 	int StartThread();
 
 private:
 	TextLog* m_pCoreLog;
 	BaseConfig* m_pBaseConfig;
-	Cluster* m_pClusters;
 
 	int m_epSocket;
 	struct epoll_event *m_pEpollEvs;

@@ -4,7 +4,6 @@
 #include <string.h>
 #include "../common/baseconfig.h"
 #include "../common/BaseCommon.h"
-#include "../common/network/cluster.h"
 
 #define DEFAULT_PORT 3040
 #define DEFAULT_MAX_PACKET_SIZE 8192
@@ -26,7 +25,6 @@ public:
 	int CheckCfg();
 
 	char szaBServClusterCfgFile[64];
-	EClusterType m_eClusterType;
 private:
 	
 };

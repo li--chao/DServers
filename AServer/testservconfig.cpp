@@ -47,7 +47,11 @@ int TestServConfig::ReadCfgFile(const char* szpFileName)
 			continue;
 		}
 
-		if(strcmp(szaFileBuff, "MaxPacketSize") == 0)
+		if(strcmp(szaFileBuff, "Port") == 0)
+		{
+			m_usServPort = (unsigned short)atoi(szpValue);
+		}
+		else if(strcmp(szaFileBuff, "MaxPacketSize") == 0)
 		{
 			m_uiMaxPacketSize = (unsigned int)atoi(szpValue);
 		}
@@ -81,7 +85,7 @@ int TestServConfig::ReadCfgFile(const char* szpFileName)
 		}
 		else if(strcmp(szaFileBuff, "ServerType") == 0)
 		{
-			m_eClusterType = (EClusterType)atoi(szpValue);
+//			m_eClusterType = (EClusterType)atoi(szpValue);
 		}
 		else if(strcmp(szaFileBuff, "BServerCfgFile") == 0)
 		{

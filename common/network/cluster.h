@@ -6,22 +6,14 @@
 #include "../container/hashtable.h"
 #include "netcommon.h"
 
-enum EClusterType
-{
-	E_ClusterType_None = -1,
-	E_ClusterType_A,
-	E_ClusterType_B,
-	E_Cluster_Num
-};
-
 
 struct Cluster
 {
-	Cluster(LcAbstractCli* pCli = NULL) :
+	Cluster() :
 	m_iNodeNum(0),
 	m_iMaxNodeNum(-1),
 	m_eClusterType(E_ClusterType_None),
-	m_pCli(pCli)
+	m_pCli(NULL)
 	{
 
 	}

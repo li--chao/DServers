@@ -322,6 +322,11 @@ void* LcEpollNet::Thread_NetServ(void* param)
 			{
 				pNet->EpollSend((OverLap*)pNet->m_pEpollEvs[i].data.ptr);	
 			}
+			else
+			{
+				OverLap* pOverLap = (OverLap*)pNet->m_pEpollEvs[i].data.ptr;
+				pNet->RemoveConnect(pOverLap);		
+			}
 		}
 	}
 

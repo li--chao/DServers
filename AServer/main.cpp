@@ -16,7 +16,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-//	daemon(1, 0);
+	daemon(1, 0);
 
 //		读取配置
 	TestServConfig servCfg;
@@ -34,12 +34,6 @@ int main(int argc, char** argv)
 		std::cerr << "Log Init Error" << std::endl;
 		return 1;
 	}
-//		初始化机群对象
-	Cluster cCluster;
-	if(cCluster.LoadClusterInfo(servCfg.szaBServClusterCfgFile))
-	{
-		return 1;
-	}
 
 //		初始化服务器和客户端对象
 	LcAbstractNet* pServNet = new LcEpollNet();
@@ -49,13 +43,33 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	if(pEpollCli->Init(&servCfg, &log, &cCluster))
+	if(pEpollCli->Init(&servCfg, &log))
+	{
+		return 1;
+	}
+
+//		初始化机群对象
+	Cluster* cCluster = new Cluster[E_ClusterType_Num];
+	cCluster[E_ClusterType_B].m_eClusterType = E_ClusterType_B;
+	cCluster[E_ClusterType_B].m_pCli = pEpollCli;
+	if(cCluster[E_ClusterType_B].LoadClusterInfo(servCfg.szaBServClusterCfgFile))
 	{
 		return 1;
 	}
 
 	TestServ serv(&log, pServNet, pEpollCli);
-	pServNet->StartThread();
+	if(pServNet->StartThread())
+	{
+		log.Write("pServNet StartThread error");
+		return 1;
+	}
+
+	if(pEpollCli->StartThread())
+	{
+		log.Write("pEpollCli StartThread error");
+		return 1;
+	}
+
 	serv.MainFun();
 
 	return 0;
