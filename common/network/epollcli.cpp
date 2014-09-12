@@ -72,6 +72,22 @@ int LcEpollCli::StartThread()
 	return ret;
 }
 
+void LcEpollCli::RequestSnd(long& lAddr)
+{
+	m_IONetSndQue.Pop(lAddr);
+}
+
+int LcEpollCli::PushRequest(const int& fd, OverLap* pOverLap)
+{
+
+	return 0;
+}
+
+int LcEpollCli::Connect(const char* szpNodeIP, const unsigned short& usNodePort, int& fd)
+{
+	return 0;
+}
+
 void* LcEpollCli::Thread_EpollNet(void* vparam)
 {
 	LcEpollCli* pCliNet = (LcEpollCli*)vparam;

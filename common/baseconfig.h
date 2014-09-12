@@ -9,7 +9,8 @@
 
 enum EClusterType
 {
-	E_ClusterType_None = -1,
+	E_ClusterType_Client = -2,
+	E_ClusterType_None,
 	E_ClusterType_A,
 	E_ClusterType_B,
 	E_ClusterType_Num

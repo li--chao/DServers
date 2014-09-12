@@ -3,6 +3,7 @@
 
 #include "../common/network/epollnet.h"
 #include "../common/network/epollcli.h"
+#include "../common/network/cluster.h"
 #include "../common/log/TextLog.h"
 #include "testservconfig.h"
 #include "../common/packet.h"

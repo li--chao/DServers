@@ -16,7 +16,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	daemon(1, 0);
+//	daemon(1, 0);
 
 //		读取配置
 	TestServConfig servCfg;

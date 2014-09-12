@@ -13,7 +13,6 @@
 #include "../baseconfig.h"
 #include <pthread.h>
 
-
 struct OverLap
 {
 	OverLap()
@@ -74,8 +73,10 @@ protected:
 
 class LcAbstractCli
 {
-
-
+public:
+	virtual void RequestSnd(long& lAddr) = 0;
+	virtual int PushRequest(const int& fd, OverLap* pOverLap) = 0;
+	virtual int Connect(const char* szpNodeIP, const unsigned short& usNodePort, int& fd) = 0;
 };
 
 #endif

@@ -1,6 +1,7 @@
 #ifndef CLUSTER_H
 #define CLUSTER_H
 
+#include <stdio.h>
 #include "netnode.h"
 #include "../io/FileUtil.h"
 #include "../container/hashtable.h"
@@ -20,6 +21,11 @@ struct Cluster
 
 	int LoadClusterInfo(const char* szpCfgFile)
 	{
+		if(pthread_mutex_init(&m_clustermtx, NULL))
+		{
+			return 3;
+		}
+
 		FILE* fp = fopen(szpCfgFile, "rb");
 		if(fp == NULL)
 		{
@@ -86,6 +92,27 @@ struct Cluster
 		return *(unsigned long long*)szaTmp;
 	}
 
+	void BroadHeartBeat()
+	{
+		NetNode szaNetNode[m_NetNodeTable.BucketCnt()];
+		unsigned int uiNodeCount = 0;
+		m_NetNodeTable.GetValues(szaNetNode, uiNodeCount);
+
+		pthread_mutex_lock(&m_clustermtx);
+		for(unsigned int u = 0; u < uiNodeCount; u++)
+		{
+			long lAddr = 0;
+			m_pCli->RequestSnd(lAddr);
+			OverLap* pOverLap = (OverLap*)lAddr;
+			if(szaNetNode[u].fd == -1)
+			{
+				m_pCli->Connect(szaNetNode[u].szaNodeIP, szaNetNode[u].usNodePort, szaNetNode[u].fd);
+			}
+			m_pCli->PushRequest(szaNetNode[u].fd, pOverLap);
+		}
+		pthread_mutex_unlock(&m_clustermtx);
+	}
+
 	int m_iNodeNum;
 	int m_iMaxNodeNum;
 	LcHashTable<unsigned long long, NetNode> m_NetNodeTable;
@@ -114,6 +141,8 @@ private:
 		m_iNodeNum++;
 
 	}
+
+	pthread_mutex_t m_clustermtx;
 };
 
 #endif

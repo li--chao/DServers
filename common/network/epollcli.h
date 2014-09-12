@@ -5,7 +5,6 @@
 #include "netcommon.h"
 #include "netqueue.h"
 #include "lcfullpktchecker.h"
-#include "cluster.h"
 
 
 class LcEpollCli : public LcAbstractCli
@@ -14,6 +13,9 @@ public:
 	LcEpollCli();
 	int Init(BaseConfig* pBaseConfig, TextLog* pLog);
 	int StartThread();
+	void RequestSnd(long& lAddr);
+	int PushRequest(const int& fd, OverLap* pOverLap);
+	int Connect(const char* szpNodeIP, const unsigned short& usNodeIP, int& fd);
 
 private:
 	TextLog* m_pCoreLog;

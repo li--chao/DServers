@@ -147,9 +147,11 @@ void* TestServ::Thread_HeartBeat(void* vparam)
 	{
 		for(int i = 0; i < (int)E_ClusterType_Num; i++)
 		{
-			if(pServ->m_pClusters[i].m_eClusterType != E_ClusterType_None && pServ->m_pBaseConfig->m_eClusterType != E_ClusterType_None)
+			if(pServ->m_pClusters[i].m_eClusterType != E_ClusterType_None && 
+			   pServ->m_pClusters[i].m_eClusterType != E_ClusterType_Client &&
+			   pServ->m_pClusters[i].m_eClusterType != pServ->m_pBaseConfig->m_eClusterType)
 			{
-				pServ->m_pLog->Write("send heart beat to cluster %d", i);
+				pServ->m_pClusters[i].BroadHeartBeat();
 			}
 		}
 
