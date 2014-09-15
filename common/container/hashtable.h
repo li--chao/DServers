@@ -204,9 +204,16 @@ public:
 		{
 			t_key __key;
 			LcBucket::GetBucketKey(szpBucket, __key);
+			if(__key == _key)
+			{
+				char* szpValue = LcBucket::GetBucketValue(szpBucket, __key);
+				memcpy(szpValue, (char*)&_val, sizeof(_val));
+				pthread_mutex_unlock(&m_TableLock);
+				return 0;
+			}
 		}
 		pthread_mutex_unlock(&m_TableLock);
-		return 0;
+		return 1;
 	}
 
 	void GetKeys(t_key *__pKey, unsigned int& uiBucketCnt)

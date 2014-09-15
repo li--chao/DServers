@@ -29,22 +29,32 @@ int LcEpollCli::Init(BaseConfig* pBaseConfig, TextLog* pLog)
 		return 1;
 	}
 
-	if(m_IONetConnQue.Init(pBaseConfig->m_uiCliMaxOverLapNum))
+	if(m_IONetConnMemQue.Init(pBaseConfig->m_uiCliMaxOverLapNum))
 	{
 		return -1;
 	}
 
-	if(m_IONetWorkQue.Init(pBaseConfig->m_uiCliMaxOverLapNum))
+	if(m_IONetWorkMemQue.Init(pBaseConfig->m_uiCliMaxOverLapNum))
 	{
 		return -1;
 	}
 
-	if(m_IONetSndQue.Init(pBaseConfig->m_uiCliMaxOverLapNum))
+	if(m_IONetWorkMemQue.Init(pBaseConfig->m_uiCliMaxOverLapNum))
+	{
+		return -1;
+	}
+
+	if(m_IONetSndMemQue.Init(pBaseConfig->m_uiCliMaxOverLapNum))
 	{
 		return -1;
 	}
 
 	if(m_ConnTable.Init(pBaseConfig->m_uiCliMaxOverLapNum))
+	{
+		return -1;
+	}
+
+	if(pthread_mutex_init(&m_SndSync, NULL))
 	{
 		return -1;
 	}
@@ -55,9 +65,9 @@ int LcEpollCli::Init(BaseConfig* pBaseConfig, TextLog* pLog)
 		m_pIOWorkQue[u].szpComBuf = m_szpRecvPackMem + (u * pBaseConfig->m_uiMaxPacketSize);
 		m_pIOSndQue[u].szpComBuf = m_szpRecvPackMem + (u * pBaseConfig->m_uiMaxPacketSize);
 
-		m_IONetConnQue.Push((long)&m_pIORecvQue[u]);
-		m_IONetWorkQue.Push((long)&m_pIOWorkQue[u]);
-		m_IONetSndQue.Push((long)&m_pIOSndQue[u]);
+		m_IONetConnMemQue.Push((long)&m_pIORecvQue[u]);
+		m_IONetWorkMemQue.Push((long)&m_pIOWorkQue[u]);
+		m_IONetSndMemQue.Push((long)&m_pIOSndQue[u]);
 	}
 
 	m_epSocket = epoll_create(m_pBaseConfig->m_uiCliConcurrentNum);
@@ -81,7 +91,7 @@ int LcEpollCli::StartThread()
 
 void LcEpollCli::RequestSnd(long& lAddr)
 {
-	m_IONetSndQue.Pop(lAddr);
+	m_IONetSndMemQue.Pop(lAddr);
 }
 
 int LcEpollCli::PushRequest(const int& fd, OverLap* pOverLap)
@@ -116,7 +126,7 @@ int LcEpollCli::Connect(const char* szpNodeIP, const unsigned short& usNodePort,
 	}
 
 	long lAddr = 0;
-	m_IONetConnQue.Pop(lAddr);
+	m_IONetConnMemQue.Pop(lAddr);
 	OverLap* pOverLap = (OverLap*)lAddr;
 	struct epoll_event ev;
 	ev.events = EPOLLIN | EPOLLET;
@@ -124,13 +134,22 @@ int LcEpollCli::Connect(const char* szpNodeIP, const unsigned short& usNodePort,
 
 	if(epoll_ctl(m_epSocket, EPOLL_CTL_ADD, fd, &ev) == -1)
 	{
-		m_IONetConnQue.Push((long)pOverLap);
+		m_IONetConnMemQue.Push((long)pOverLap);
 		close(fd);
 		return 2;
 	}
 
 	pOverLap->fd = fd;
 	pOverLap->u64SessionID = Cluster::MkPeerID(szpNodeIP, usNodePort);
+	pOverLap->uiComLen = m_pBaseConfig->m_uiMaxPacketSize;
+	pOverLap->uiFinishLen = 0;
+	pOverLap->uiPeerIP = inet_addr(szpNodeIP);
+	pOverLap->usPeerPort = usNodePort;
+	pOverLap->u64PacketRecv = 0;
+	pOverLap->u64PacketSnd = 0;
+	pOverLap->uiPacketLen = 0;
+	pOverLap->u64HeartBeatRecv = time(NULL);
+
 	m_ConnTable.Insert(pOverLap->u64SessionID, pOverLap);
 
 	return 0;
@@ -154,7 +173,7 @@ void* LcEpollCli::Thread_EpollNet(void* vparam)
 		{
 			if(pCliNet->m_pEpollEvs[i].events & EPOLLIN)
 			{
-
+				pCliNet->EpollRecv((OverLap*)pCliNet->m_pEpollEvs[i].data.ptr);
 			}
 			else if(pCliNet->m_pEpollEvs[i].events & EPOLLOUT)
 			{
@@ -164,4 +183,111 @@ void* LcEpollCli::Thread_EpollNet(void* vparam)
 	}	
 
 	return NULL;
+}
+
+void LcEpollCli::EpollRecv(OverLap* pOverLap)
+{
+	int ret = 0;
+	bool bIsHeadChecked = false;
+	while(1)
+	{
+		ret = recv(pOverLap->fd, pOverLap->szpComBuf + pOverLap->uiFinishLen, pOverLap->uiComLen, 0);
+		if(ret == 0 || ret > (int)pOverLap->uiComLen)
+		{
+			//	to do remove connect
+			RemoveConnect(pOverLap);
+			return;
+		}
+		else if(ret == -1 && errno == EAGAIN)
+		{
+			// no data
+			break;
+		}
+		else if(ret == -1)
+		{
+			//	to do remove connect, an error occured when recv.
+			RemoveConnect(pOverLap);
+			return;
+		}
+
+		pOverLap->uiComLen -= ret;
+		pOverLap->uiFinishLen += ret;
+		
+		//	to do check packet
+		switch(CheckPacket(pOverLap, bIsHeadChecked))
+		{
+		case 0:
+			continue;
+		case 1:
+		case 2:
+			RemoveConnect(pOverLap);
+			return;
+		case 3:
+		case 4:
+			continue;
+		}
+	}
+}
+
+void LcEpollCli::RemoveConnect(OverLap* pOverLap)
+{
+	if(m_ConnTable.DeleteByKey(pOverLap->u64SessionID))
+	{
+		return;
+	}
+
+	struct epoll_event ev;
+	epoll_ctl(m_epSocket, EPOLL_CTL_DEL, pOverLap->fd, &ev);
+	close(pOverLap->fd);
+	pOverLap->u64SessionID = 0;
+	pOverLap->fd = -1;
+	ReleaseSndList(pOverLap);
+	m_IONetConnMemQue.Push((long)pOverLap);
+}
+
+void LcEpollCli::ReleaseSndList(OverLap* pOverLap)
+{
+	while(pOverLap->pSndList)
+	{
+		OverLap* pSndOverLap = pOverLap->pSndList;
+		m_IONetSndMemQue.Push((long)pSndOverLap);
+		pOverLap->pSndList = NULL;
+		pOverLap = pSndOverLap;
+	}
+}
+
+int LcEpollCli::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
+{
+	while(1)
+	{
+		if(!bIsHeadChked)
+		{
+			switch(m_pChecker->CheckPacketHead(pOverLap, m_pBaseConfig->m_uiHeadPacketSize))
+			{
+			case 0:	//	包头校验成功
+				bIsHeadChked = true;
+				break;
+			case 1:	//	包长度不够
+				return 3;
+			case 2:	//	校验失败
+				return 1;
+			}
+
+			unsigned int uiPacketLen = *(unsigned int*)(pOverLap->szpComBuf + OFFSET_PACKET_LEN);
+			switch(m_pChecker->CheckPacketEnd(pOverLap, m_pBaseConfig->m_uiHeadPacketSize, m_pBaseConfig->m_uiMaxPacketSize))
+			{
+			case 0:	//	校验成功
+				bIsHeadChked = false;
+				//	to send to work queue
+				memcpy(pOverLap->szpComBuf, pOverLap->szpComBuf + uiPacketLen, pOverLap->uiFinishLen - uiPacketLen);
+				pOverLap->uiFinishLen -= uiPacketLen;
+				pOverLap->uiComLen = m_pBaseConfig->m_uiMaxPacketSize - pOverLap->uiFinishLen;
+			case 1:	//	长度不够
+				return 4;
+			case 2:	//	校验失败
+				return 2;
+			}
+		}
+	}
+	return 0;
 }

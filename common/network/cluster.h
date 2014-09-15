@@ -109,6 +109,8 @@ struct Cluster
 					printf("connect to cluster %d, node %s:%u failed\n", m_eClusterType, szaNetNode[u].szaNodeIP, szaNetNode[u].usNodePort);
 					continue;
 				}
+
+				m_NetNodeTable.Update(Cluster::MkPeerID(szaNetNode[u].szaNodeIP, szaNetNode[u].usNodePort), szaNetNode[u]);
 			}
 
 			m_pCli->RequestSnd(lAddr);

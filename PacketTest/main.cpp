@@ -85,15 +85,16 @@ int main(int argc, char** argv)
 	unGetIOPacket.m_GetIOPacket.u64SessionID = unGetSessionIDRespd.m_GetSessionIDRespd.m_u64SessionID;
 	unGetIOPacket.m_GetIOPacket.m_usEndCode = END_CODE;
 
-	for(int i = 0; i < 5; i++)
+	for(int i = 0; i < 100; i++)
 	{
 		UnGetIOPacketRespd unGetIOPacketRespd;
 		send(sock, unGetIOPacket.m_szaPacketBuff, sizeof(unGetIOPacket.m_GetIOPacket), MSG_NOSIGNAL);
 		recv(sock, unGetIOPacketRespd.m_szaPacketBuff, sizeof(unGetIOPacketRespd.m_GetIOPacketRespd), 0);
-		printf("packet recv = %llu\n", unGetIOPacketRespd.m_GetIOPacketRespd.m_u64PacketRecv);
-		printf("packet send = %llu\n", unGetIOPacketRespd.m_GetIOPacketRespd.m_u64PacketSend);
+//		printf("packet recv = %llu\n", unGetIOPacketRespd.m_GetIOPacketRespd.m_u64PacketRecv);
+//		printf("packet send = %llu\n", unGetIOPacketRespd.m_GetIOPacketRespd.m_u64PacketSend);
 	}
 
+/*
 	UnHeartBeat heartBeatPack;
 	heartBeatPack.m_HeartBeat.m_phPrtcolHead.m_uiIdentifyCode = IDENTIFY_CODE;
 	heartBeatPack.m_HeartBeat.m_phPrtcolHead.m_uiOperateCode = HEART_BEAT;
@@ -106,6 +107,7 @@ int main(int argc, char** argv)
 		send(sock, heartBeatPack.m_szaPacketBuff, sizeof(heartBeatPack.m_HeartBeat), 0);
 		sleep(3);
 	}
+*/
 	pthread_mutex_lock(&deadlock);
 	pthread_mutex_lock(&deadlock);
 

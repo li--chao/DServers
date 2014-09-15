@@ -17,6 +17,7 @@ public:
 	void RequestSnd(long& lAddr);
 	int PushRequest(const int& fd, OverLap* pOverLap);
 	int Connect(const char* szpNodeIP, const unsigned short& usNodeIP, int& fd);
+	void RemoveConnect(OverLap* pOverLap);
 
 private:
 	TextLog* m_pCoreLog;
@@ -32,16 +33,20 @@ private:
 	OverLap* m_pIOWorkQue;
 	OverLap* m_pIOSndQue;
 
-	NetQueue m_IONetConnQue;
+	NetQueue m_IONetConnMemQue;
+	NetQueue m_IONetWorkMemQue;
 	NetQueue m_IONetWorkQue;
-	NetQueue m_IONetSndQue;
+	NetQueue m_IONetSndMemQue;
 
 	LcBaseChecker* m_pChecker;
 
 	LcHashTable<unsigned long long, OverLap*> m_ConnTable;
-
+	pthread_mutex_t m_SndSync;
 private:
 	static void* Thread_EpollNet(void* vparam);
+	void EpollRecv(OverLap* pOverLap);
+	int CheckPacket(OverLap* pOverLap, bool& bIsHeadChked);
+	void ReleaseSndList(OverLap* pOverLap);
 };
 
 #endif

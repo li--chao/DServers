@@ -526,10 +526,10 @@ int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 		case 0:	//	包尾校验成功，bIsHeadChked设为false，移动内存，并重新给重叠结构的uiComLen和uiFinishLen赋值校验下一个包，然后将完整的包送到工作线程
 			m_txlNetLog->Write("check end success");
 			bIsHeadChked = false;
+			SendToWorkQue(pOverLap, uiPacketLen);
 			memcpy(pOverLap->szpComBuf, pOverLap->szpComBuf + uiPacketLen, pOverLap->uiFinishLen - uiPacketLen);
 			pOverLap->uiFinishLen -= uiPacketLen;
 			pOverLap->uiComLen = m_pBaseConfig->m_uiMaxPacketSize - pOverLap->uiFinishLen;
-			SendToWorkQue(pOverLap, uiPacketLen);
 			break;
 		case 1:	//	读取包的长度小于包的长度
 			m_txlNetLog->Write("packet len: %d, read len: %d not long enough to check end", uiPacketLen, pOverLap->uiFinishLen);
