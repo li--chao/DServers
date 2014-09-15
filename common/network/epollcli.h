@@ -15,6 +15,7 @@ public:
 	int Init(BaseConfig* pBaseConfig, TextLog* pLog);
 	int StartThread();
 	void RequestSnd(long& lAddr);
+	void ReleaseRequest(const long& lAddr);
 	int PushRequest(const int& fd, OverLap* pOverLap);
 	int Connect(const char* szpNodeIP, const unsigned short& usNodeIP, int& fd);
 	void RemoveConnect(OverLap* pOverLap);

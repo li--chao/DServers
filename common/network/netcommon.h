@@ -75,6 +75,7 @@ class LcAbstractCli
 {
 public:
 	virtual void RequestSnd(long& lAddr) = 0;
+	virtual void ReleaseRequest(const long& lAddr) = 0;
 	virtual int PushRequest(const int& fd, OverLap* pOverLap) = 0;
 	virtual int Connect(const char* szpNodeIP, const unsigned short& usNodePort, int& fd) = 0;
 };

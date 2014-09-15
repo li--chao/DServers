@@ -94,9 +94,19 @@ void LcEpollCli::RequestSnd(long& lAddr)
 	m_IONetSndMemQue.Pop(lAddr);
 }
 
+void LcEpollCli::ReleaseRequest(const long& lAddr)
+{
+	m_IONetSndMemQue.Push(lAddr);
+}
+
 int LcEpollCli::PushRequest(const int& fd, OverLap* pOverLap)
 {
-
+	OverLap* pConnOverLap;
+	if(m_ConnTable.Search(pOverLap->u64SessionID, pConnOverLap))
+	{
+		m_pCoreLog->Write("%llu can't be found", pOverLap->u64SessionID);
+		return 1;
+	}
 	return 0;
 }
 
@@ -196,6 +206,7 @@ void LcEpollCli::EpollRecv(OverLap* pOverLap)
 		{
 			//	to do remove connect
 			RemoveConnect(pOverLap);
+			m_pCoreLog->Write("connect %llu closed");
 			return;
 		}
 		else if(ret == -1 && errno == EAGAIN)
@@ -207,6 +218,7 @@ void LcEpollCli::EpollRecv(OverLap* pOverLap)
 		{
 			//	to do remove connect, an error occured when recv.
 			RemoveConnect(pOverLap);
+			m_pCoreLog->Write("connect %llu closed", pOverLap->u64SessionID);
 			return;
 		}
 

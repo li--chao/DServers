@@ -115,7 +115,13 @@ struct Cluster
 
 			m_pCli->RequestSnd(lAddr);
 			OverLap* pOverLap = (OverLap*)lAddr;
-			m_pCli->PushRequest(szaNetNode[u].fd, pOverLap);
+			pOverLap->u64SessionID = Cluster::MkPeerID(szaNetNode[u].szaNodeIP, szaNetNode[u].usNodePort);
+			if(m_pCli->PushRequest(szaNetNode[u].fd, pOverLap))
+			{
+				szaNetNode[u].fd = -1;
+				m_NetNodeTable.Update(Cluster::MkPeerID(szaNetNode[u].szaNodeIP, szaNetNode[u].usNodePort), szaNetNode[u]);
+				m_pCli->ReleaseRequest((long)pOverLap);
+			}
 		}
 		pthread_mutex_unlock(&m_clustermtx);
 	}
