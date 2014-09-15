@@ -161,7 +161,8 @@ public:
 				szpValue = LcBucket::GetBucketValue(szpBucket, __key);
 				pthread_mutex_unlock(&m_TableLock);
 				return 0;
-			} 
+			}
+			szpBucket = LcBucket::GetNextBucketAddr(szpBucket); 
 		}
 
 		szpValue = 0;
@@ -186,10 +187,26 @@ public:
 				pthread_mutex_unlock(&m_TableLock);
 				return 0;
 			} 
+			szpBucket = LcBucket::GetNextBucketAddr(szpBucket); 
 		}
 
 		pthread_mutex_unlock(&m_TableLock);
 		return 1;
+	}
+
+	int Update(const t_key& _key, const t_value& _val)
+	{
+		unsigned int uiBucketIdx = _key % m_uiMaxBucketsSize;
+
+		pthread_mutex_lock(&m_TableLock);
+		char* szpBucket = m_szppBuckets[uiBucketIdx];
+		while(szpBucket)
+		{
+			t_key __key;
+			LcBucket::GetBucketKey(szpBucket, __key);
+		}
+		pthread_mutex_unlock(&m_TableLock);
+		return 0;
 	}
 
 	void GetKeys(t_key *__pKey, unsigned int& uiBucketCnt)

@@ -3,7 +3,7 @@
 #include "../servconfig.h"
 #include "../common/log/TextLog.h"
 #include "../common/network/netqueue.h"
-#include "../common/container/hashtableiter.h"
+#include "../common/container/hashtable.h"
 #include "assert.h"
 
 pthread_mutex_t deadlock = PTHREAD_MUTEX_INITIALIZER;
@@ -67,10 +67,17 @@ int main(int argc, char** argv)
 	testHash.Insert(4, 5);
 	testHash.Insert(10749, 15);
 
+	unsigned int u;
+	ret = testHash.Search(2, u);
+	assert(ret == 0);
+	ret = testHash.Search(21496, u);
+	assert(ret == 1);
 	unsigned int* pVals = new unsigned int[testHash.BucketCnt()];
+	unsigned int uiKeys = 0;
 	int* pKeys = new int[testHash.BucketCnt()];
-	testHash.GetValues(pVals);
-	testHash.GetKeys(pKeys);
+	
+	testHash.GetValues(pVals, uiKeys);
+	testHash.GetKeys(pKeys, uiKeys);
 	assert(pVals[0] == 15);
 	assert(pVals[1] == 3);
 	assert(pVals[2] == 5);
