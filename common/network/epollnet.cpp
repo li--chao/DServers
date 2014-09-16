@@ -452,10 +452,10 @@ void LcEpollNet::EpollSend(OverLap* pOverLap)
 
 	while(pSndList)
 	{
-		while(pSndList->uiSndComLen > 0 || pSndList->uiSndFinishLen + pSndList->uiSndComLen > m_pBaseConfig->m_uiMaxPacketSize)
+		while(pSndList->uiSndComLen > 0)
 		{
 			int ret = send(fd, pSndList->szpComBuf + pSndList->uiSndFinishLen, pSndList->uiSndComLen, MSG_NOSIGNAL);
-			if(ret == -1 && errno == EAGAIN)
+			if(ret == -1 && errno == EAGAIN)	// 系统缓存写满重新放入发送链表
 			{
 				// to do 发起epoll写事件
 				SendData(pSndList);
@@ -463,13 +463,11 @@ void LcEpollNet::EpollSend(OverLap* pOverLap)
 			}
 			else if(ret == 0 || ret > (int)pSndList->uiSndComLen)
 			{
-				ReleaseSndList(pSndList);
 				RemoveConnect(pOverLap);
 				return;
 			}
 			else if(ret == -1)
 			{
-				ReleaseSndList(pSndList);
 				RemoveConnect(pOverLap);
 				return;
 			}
@@ -568,12 +566,17 @@ void LcEpollNet::SendToWorkQue(OverLap* pOverLap, const unsigned int& uiPacketLe
 
 void LcEpollNet::ReleaseSndList(OverLap* pOverLap)
 {
-	while(pOverLap->pSndList)
+	pthread_mutex_lock(&m_cSyncSendData);
+	OverLap* pSndOverLap = pOverLap->pSndList;
+	pOverLap->pSndList = NULL;
+	pthread_mutex_unlock(&m_cSyncSendData);
+
+	while(pSndOverLap)
 	{
-		OverLap* pSndOverLap = pOverLap->pSndList;
-		m_IONetSndMemQue.Push((long)pSndOverLap);
-		pOverLap->pSndList = NULL;
-		pOverLap = pSndOverLap;
+		OverLap* pTmpOverLap = pSndOverLap;
+		pSndOverLap = pSndOverLap->pSndList;
+		m_IONetSndMemQue.Push((long)pTmpOverLap);
+		pTmpOverLap->pSndList = NULL;
 	}
 
 }

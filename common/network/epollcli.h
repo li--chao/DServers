@@ -16,7 +16,7 @@ public:
 	int StartThread();
 	void RequestSnd(long& lAddr);
 	void ReleaseRequest(const long& lAddr);
-	int PushRequest(const int& fd, OverLap* pOverLap);
+	int PushRequest(OverLap* pOverLap);
 	int Connect(const char* szpNodeIP, const unsigned short& usNodeIP, int& fd);
 	void RemoveConnect(OverLap* pOverLap);
 
@@ -46,6 +46,7 @@ private:
 private:
 	static void* Thread_EpollNet(void* vparam);
 	void EpollRecv(OverLap* pOverLap);
+	void EpollSend(OverLap* pOverLap);
 	int CheckPacket(OverLap* pOverLap, bool& bIsHeadChked);
 	void ReleaseSndList(OverLap* pOverLap);
 };

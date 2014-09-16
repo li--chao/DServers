@@ -99,13 +99,37 @@ void LcEpollCli::ReleaseRequest(const long& lAddr)
 	m_IONetSndMemQue.Push(lAddr);
 }
 
-int LcEpollCli::PushRequest(const int& fd, OverLap* pOverLap)
+int LcEpollCli::PushRequest(OverLap* pOverLap)
 {
+	if(pOverLap == NULL || pOverLap->uiComLen == 0)
+	{
+		return 1;
+	}
+
 	OverLap* pConnOverLap;
 	if(m_ConnTable.Search(pOverLap->u64SessionID, pConnOverLap))
 	{
 		m_pCoreLog->Write("%llu can't be found", pOverLap->u64SessionID);
-		return 1;
+		return 2;
+	}
+
+	pthread_mutex_lock(&m_SndSync);
+	OverLap* pSndList = pConnOverLap->pSndList;
+	while(pSndList->pSndList)
+	{
+		pSndList = pSndList->pSndList;
+	}
+
+	pSndList->pSndList = pOverLap;
+	pthread_mutex_unlock(&m_SndSync);
+
+	struct epoll_event ev;
+	ev.events = EPOLLOUT;
+	ev.data.ptr = (void*)pConnOverLap;
+	if(epoll_ctl(m_epSocket, EPOLL_CTL_MOD, pConnOverLap->fd, &ev) == -1)
+	{
+		m_pCoreLog->Write("epoll_ctl_mod EPOLLOUT error");
+		RemoveConnect(pConnOverLap);
 	}
 	return 0;
 }
@@ -187,7 +211,12 @@ void* LcEpollCli::Thread_EpollNet(void* vparam)
 			}
 			else if(pCliNet->m_pEpollEvs[i].events & EPOLLOUT)
 			{
-
+				pCliNet->EpollSend((OverLap*)pCliNet->m_pEpollEvs[i].data.ptr);
+			}
+			else
+			{
+				OverLap* pOverLap = (OverLap*)pCliNet->m_pEpollEvs[i].data.ptr;
+				pCliNet->RemoveConnect(pOverLap);
 			}
 		}
 	}	
@@ -204,19 +233,16 @@ void LcEpollCli::EpollRecv(OverLap* pOverLap)
 		ret = recv(pOverLap->fd, pOverLap->szpComBuf + pOverLap->uiFinishLen, pOverLap->uiComLen, 0);
 		if(ret == 0 || ret > (int)pOverLap->uiComLen)
 		{
-			//	to do remove connect
 			RemoveConnect(pOverLap);
 			m_pCoreLog->Write("connect %llu closed");
 			return;
 		}
 		else if(ret == -1 && errno == EAGAIN)
 		{
-			// no data
 			break;
 		}
 		else if(ret == -1)
 		{
-			//	to do remove connect, an error occured when recv.
 			RemoveConnect(pOverLap);
 			m_pCoreLog->Write("connect %llu closed", pOverLap->u64SessionID);
 			return;
@@ -225,7 +251,6 @@ void LcEpollCli::EpollRecv(OverLap* pOverLap)
 		pOverLap->uiComLen -= ret;
 		pOverLap->uiFinishLen += ret;
 		
-		//	to do check packet
 		switch(CheckPacket(pOverLap, bIsHeadChecked))
 		{
 		case 0:
@@ -237,6 +262,42 @@ void LcEpollCli::EpollRecv(OverLap* pOverLap)
 		case 3:
 		case 4:
 			continue;
+		}
+	}
+}
+
+void LcEpollCli::EpollSend(OverLap* pOverLap)
+{
+	int fd = pOverLap->fd;
+
+	pthread_mutex_lock(&m_SndSync);
+	OverLap* pSndList = pOverLap->pSndList;
+	pOverLap->pSndList = NULL;
+	pthread_mutex_unlock(&m_SndSync);
+
+	while(pSndList)
+	{
+		while(pSndList->uiSndComLen > 0)
+		{
+			int ret = send(fd, pSndList->szpComBuf + pSndList->uiSndFinishLen, pSndList->uiSndComLen, MSG_NOSIGNAL);
+			if(ret == -1 && errno == EAGAIN)
+			{
+				PushRequest(pSndList);
+				return;
+			}
+			else if(ret == 0 || ret > (int)pSndList->uiSndComLen)
+			{
+				RemoveConnect(pOverLap);
+				return;
+			}
+			else if(ret == -1)
+			{
+				RemoveConnect(pOverLap);
+				return;
+			}
+
+			pSndList->uiSndFinishLen += ret;
+			pSndList->uiSndComLen -= ret;
 		}
 	}
 }
@@ -259,12 +320,16 @@ void LcEpollCli::RemoveConnect(OverLap* pOverLap)
 
 void LcEpollCli::ReleaseSndList(OverLap* pOverLap)
 {
-	while(pOverLap->pSndList)
+	pthread_mutex_lock(&m_SndSync);
+	OverLap* pSndOverLap = pOverLap->pSndList;
+	pOverLap->pSndList = NULL;
+	pthread_mutex_unlock(&m_SndSync);
+	while(pSndOverLap)
 	{
-		OverLap* pSndOverLap = pOverLap->pSndList;
-		m_IONetSndMemQue.Push((long)pSndOverLap);
-		pOverLap->pSndList = NULL;
-		pOverLap = pSndOverLap;
+		OverLap* pTmpOverLap = pSndOverLap;
+		pSndOverLap = pSndOverLap->pSndList;
+		m_IONetSndMemQue.Push((long)pTmpOverLap);
+		pTmpOverLap->pSndList = NULL;
 	}
 }
 
