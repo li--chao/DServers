@@ -114,13 +114,13 @@ int LcEpollCli::PushRequest(OverLap* pOverLap)
 	}
 
 	pthread_mutex_lock(&m_SndSync);
-	OverLap* pSndList = pConnOverLap->pSndList;
-	while(pSndList->pSndList)
+	OverLap* pTmp = pConnOverLap;
+	while(pTmp->pSndList)
 	{
-		pSndList = pSndList->pSndList;
+		pTmp = pTmp->pSndList;
 	}
 
-	pSndList->pSndList = pOverLap;
+	pTmp->pSndList = pOverLap;
 	pthread_mutex_unlock(&m_SndSync);
 
 	struct epoll_event ev;
@@ -302,6 +302,7 @@ void LcEpollCli::EpollSend(OverLap* pOverLap)
 
 		pOverLap->u64PacketSnd += 1;
 		OverLap* pTmpOverLap = pSndList;
+		pSndList = pSndList->pSndList;
 		pTmpOverLap->pSndList = NULL;
 		m_IONetSndMemQue.Push((long)pTmpOverLap);
 	}

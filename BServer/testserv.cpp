@@ -133,9 +133,8 @@ int TestServ::HandleGetIOPacket(OverLap* pOverLap)
 
 int TestServ::HandleHeartBeat(OverLap* pOverLap)
 {
-
 	m_pLog->Write("HandleHeartBeat");
-
+	pOverLap->u64HeartBeatRecv = time(NULL);
 	return 0;
 }
 

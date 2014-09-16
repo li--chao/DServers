@@ -115,12 +115,24 @@ struct Cluster
 
 			m_pCli->RequestSnd(lAddr);
 			OverLap* pOverLap = (OverLap*)lAddr;
+			UnHeartBeat unHeartBeat;
+			unHeartBeat.m_HeartBeat.m_phPrtcolHead.m_uiIdentifyCode = IDENTIFY_CODE;
+			unHeartBeat.m_HeartBeat.m_phPrtcolHead.m_uiOperateCode = HEART_BEAT;
+			unHeartBeat.m_HeartBeat.m_phPrtcolHead.m_uiPacketLength = sizeof(unHeartBeat.m_HeartBeat);
+			unHeartBeat.m_HeartBeat.m_u64TimeStamp = time(NULL);
+			unHeartBeat.m_HeartBeat.m_u64SessionID = Cluster::MkPeerID(szaNetNode[u].szaNodeIP, szaNetNode[u].usNodePort);
+			unHeartBeat.m_HeartBeat.m_usEndCode = END_CODE;
 			pOverLap->u64SessionID = Cluster::MkPeerID(szaNetNode[u].szaNodeIP, szaNetNode[u].usNodePort);
+			pOverLap->uiSndComLen = sizeof(unHeartBeat.m_HeartBeat);
+			memcpy(pOverLap->szpComBuf, unHeartBeat.m_szaPacketBuff, pOverLap->uiSndComLen);
+
 			if(m_pCli->PushRequest(pOverLap) == 2)
 			{
 				szaNetNode[u].fd = -1;
 				m_NetNodeTable.Update(Cluster::MkPeerID(szaNetNode[u].szaNodeIP, szaNetNode[u].usNodePort), szaNetNode[u]);
 				m_pCli->ReleaseRequest((long)pOverLap);
+				pthread_mutex_unlock(&m_clustermtx);
+				return;
 			}
 		}
 		pthread_mutex_unlock(&m_clustermtx);

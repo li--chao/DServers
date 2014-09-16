@@ -200,6 +200,8 @@ void LcEpollNet::SendData(OverLap* pSndOverLap)
 		}
 
 		pTmp->pSndList = pSndOverLap;
+		pthread_mutex_unlock(&m_cSyncSendData);
+
 		struct epoll_event ev;
 		ev.events = EPOLLOUT | EPOLLIN | EPOLLET;
 		ev.data.ptr = (void*)pOverLap;
@@ -209,7 +211,6 @@ void LcEpollNet::SendData(OverLap* pSndOverLap)
 			RemoveConnect(pOverLap);
 		}
 
-		pthread_mutex_unlock(&m_cSyncSendData);
 		return;
 	}
 
