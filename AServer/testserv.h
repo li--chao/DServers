@@ -30,6 +30,7 @@ private:
 	int HandleHeartBeat(OverLap* pOverLap);
 
 	static void* Thread_HeartBeat(void* vparam);
+	static void* Thread_InnerNet(void* vparam);
 };
 
 #endif

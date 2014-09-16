@@ -50,7 +50,13 @@ int TestServ::MainFun()
 int TestServ::StartThread()
 {
 	pthread_t heartBeatThrd;
+	pthread_t innerNetThrd;
 	if(pthread_create(&heartBeatThrd, NULL, Thread_HeartBeat, this))
+	{
+		return 1;
+	}
+
+	if(pthread_create(&innerNetThrd, NULL, Thread_InnerNet, this))
 	{
 		return 1;
 	}
@@ -156,6 +162,34 @@ void* TestServ::Thread_HeartBeat(void* vparam)
 		}
 
 		sleep(pServ->m_pBaseConfig->m_uiHeartBeatSndInterval);
+	}
+
+	return NULL;
+}
+
+void* TestServ::Thread_InnerNet(void* vparam)
+{
+	TestServ* pServ = (TestServ*)vparam;
+	while(1)
+	{
+		long lptr = 0;
+		LcAbstractCli* pCli = pServ->m_pClusters[pServ->m_pBaseConfig->m_eClusterType].m_pCli;
+		pCli->GetRequest(lptr);
+		OverLap* pOverLap = (OverLap*)lptr;
+		unsigned int uiOperateCode = *(unsigned int*)(pOverLap->szpComBuf + OFFSET_OPERATE_LEN);
+		int ret = 0;
+		switch(uiOperateCode)
+		{
+		case GET_SESSION_ID:
+			break;
+		}
+
+		pCli->ReleaseRequest(lptr);
+		if(ret)
+		{
+			pCli->RemoveConnect(pOverLap);
+		}
+	
 	}
 
 	return NULL;

@@ -78,6 +78,8 @@ public:
 	virtual void ReleaseRequest(const long& lAddr) = 0;
 	virtual int PushRequest(OverLap* pOverLap) = 0;
 	virtual int Connect(const char* szpNodeIP, const unsigned short& usNodePort, int& fd) = 0;
+	virtual void GetRequest(long& lptr) = 0;
+	virtual void RemoveConnect(OverLap* pOverLap) = 0;
 };
 
 #endif

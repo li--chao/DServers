@@ -89,6 +89,11 @@ int LcEpollCli::StartThread()
 	return ret;
 }
 
+void LcEpollCli::GetRequest(long& lptr)
+{
+	m_IONetWorkQue.Pop(lptr);
+}
+
 void LcEpollCli::RequestSnd(long& lAddr)
 {
 	m_IONetSndMemQue.Pop(lAddr);
@@ -96,7 +101,7 @@ void LcEpollCli::RequestSnd(long& lAddr)
 
 void LcEpollCli::ReleaseRequest(const long& lAddr)
 {
-	m_IONetSndMemQue.Push(lAddr);
+	m_IONetWorkQue.Push(lAddr);
 }
 
 int LcEpollCli::PushRequest(OverLap* pOverLap)
@@ -361,7 +366,7 @@ int LcEpollCli::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 			{
 			case 0:	//	校验成功
 				bIsHeadChked = false;
-				//	to send to work queue
+				SendToWorkQue(pOverLap, uiPacketLen);
 				memcpy(pOverLap->szpComBuf, pOverLap->szpComBuf + uiPacketLen, pOverLap->uiFinishLen - uiPacketLen);
 				pOverLap->uiFinishLen -= uiPacketLen;
 				pOverLap->uiComLen = m_pBaseConfig->m_uiMaxPacketSize - pOverLap->uiFinishLen;
@@ -373,4 +378,22 @@ int LcEpollCli::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 		}
 	}
 	return 0;
+}
+
+void LcEpollCli::SendToWorkQue(OverLap* pOverLap, const unsigned int& uiPacketLen)
+{
+	pOverLap->u64PacketRecv += 1;
+	long lWorkMem = 0;
+	m_IONetWorkMemQue.Pop(lWorkMem);
+	OverLap* pWorkOverLap = (OverLap*)lWorkMem;
+	memcpy(pWorkOverLap->szpComBuf, pOverLap->szpComBuf, uiPacketLen);
+
+	pWorkOverLap->u64SessionID = pOverLap->u64SessionID;
+	pWorkOverLap->uiPacketLen = uiPacketLen;
+	pWorkOverLap->uiPeerIP = pOverLap->uiPeerIP;
+	pWorkOverLap->usPeerPort = pOverLap->usPeerPort;
+	pWorkOverLap->u64PacketRecv = pOverLap->u64PacketRecv;
+	pWorkOverLap->u64PacketSnd = pOverLap->u64PacketSnd;
+
+	m_IONetWorkQue.Push((long)pWorkOverLap);
 }

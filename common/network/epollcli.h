@@ -14,6 +14,7 @@ public:
 	LcEpollCli();
 	int Init(BaseConfig* pBaseConfig, TextLog* pLog);
 	int StartThread();
+	void GetRequest(long& lptr);
 	void RequestSnd(long& lAddr);
 	void ReleaseRequest(const long& lAddr);
 	int PushRequest(OverLap* pOverLap);
@@ -48,6 +49,7 @@ private:
 	void EpollRecv(OverLap* pOverLap);
 	void EpollSend(OverLap* pOverLap);
 	int CheckPacket(OverLap* pOverLap, bool& bIsHeadChked);
+	void SendToWorkQue(OverLap* pOverLap, const unsigned int& uiPackLen);
 	void ReleaseSndList(OverLap* pOverLap);
 };
 
