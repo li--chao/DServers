@@ -201,7 +201,7 @@ void LcEpollNet::SendData(OverLap* pSndOverLap)
 
 		pTmp->pSndList = pSndOverLap;
 		struct epoll_event ev;
-		ev.events = EPOLLOUT;
+		ev.events = EPOLLOUT | EPOLLIN | EPOLLET;
 		ev.data.ptr = (void*)pOverLap;
 		if(epoll_ctl(m_epSocket, EPOLL_CTL_MOD, pOverLap->fd, &ev) == -1)
 		{
@@ -213,7 +213,7 @@ void LcEpollNet::SendData(OverLap* pSndOverLap)
 		return;
 	}
 
-	m_txlNetLog->Write("SessionID %llu not found");
+	m_txlNetLog->Write("SessionID %llu not found", pSndOverLap->u64SessionID);
 }
 
 int LcEpollNet::BindAndLsn(const int& iBackLog, const unsigned short& usPort)
@@ -438,7 +438,6 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 			continue;
 		}
 	}
-
 }
 
 void LcEpollNet::EpollSend(OverLap* pOverLap)
@@ -482,18 +481,6 @@ void LcEpollNet::EpollSend(OverLap* pOverLap)
 		pSndList = pSndList->pSndList;		//	准备发送下一个
 		pTmp->pSndList = NULL;				//	断开和后面的发送链
 		m_IONetSndMemQue.Push((long)pTmp);		//	放回发送内存队列
-		continue;
-	}
-
-	m_txlNetLog->Write("send over pOverLap->pSndList = %d", pOverLap->pSndList);
-	//	让fd重新可写
-	struct epoll_event ev;
-	ev.events = EPOLLIN | EPOLLET;
-	ev.data.ptr = (void*)pOverLap;
-	if(epoll_ctl(m_epSocket, EPOLL_CTL_MOD, pOverLap->fd, &ev) == -1)
-	{
-		m_txlNetLog->Write("EPOll_CTL_MOD error when EpollSend");
-		RemoveConnect(pOverLap);
 	}
 }
 
