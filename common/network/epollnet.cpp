@@ -356,6 +356,7 @@ void* LcEpollNet::Thread_HeartBeat(void* param)
 			{
 				pNet->m_txlNetLog->Write("Connect %llu HeartBeat OverTime", pOverLap->u64SessionID);
 				// to do close connect
+				pNet->RemoveConnect(pOverLap);
 			}
 		}
 		sleep(pNet->m_pBaseConfig->m_uiHeartBeatInterval);
