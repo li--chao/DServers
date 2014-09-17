@@ -130,7 +130,6 @@ struct Cluster
 			{
 				szaNetNode[u].fd = -1;
 				m_NetNodeTable.Update(Cluster::MkPeerID(szaNetNode[u].szaNodeIP, szaNetNode[u].usNodePort), szaNetNode[u]);
-				m_pCli->ReleaseRequest((long)pOverLap);
 				pthread_mutex_unlock(&m_clustermtx);
 				return;
 			}

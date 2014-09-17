@@ -185,10 +185,16 @@ void LcEpollNet::ReleaseSndReq(const long& lptr)
 
 void LcEpollNet::SendData(OverLap* pSndOverLap)
 {
-	if(pSndOverLap == NULL || pSndOverLap->uiSndComLen == 0)
+	if(pSndOverLap == NULL)
 	{
 		return;
 	}
+	else if(pSndOverLap->uiSndComLen == 0)
+	{
+		m_IONetSndMemQue.Push((long)pSndOverLap);
+		return;
+	}
+
 	OverLap* pOverLap = NULL;
 	if(m_ConnectTable.Search(pSndOverLap->u64SessionID, pOverLap) == 0)
 	{

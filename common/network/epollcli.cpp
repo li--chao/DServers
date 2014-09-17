@@ -106,8 +106,13 @@ void LcEpollCli::ReleaseRequest(const long& lAddr)
 
 int LcEpollCli::PushRequest(OverLap* pOverLap)
 {
-	if(pOverLap == NULL || pOverLap->uiComLen == 0)
+	if(pOverLap == NULL)
 	{
+		return 1;
+	}
+	else if(pOverLap->uiSndComLen == 0)
+	{
+		m_IONetSndMemQue.Push((long)pOverLap);
 		return 1;
 	}
 
@@ -115,6 +120,7 @@ int LcEpollCli::PushRequest(OverLap* pOverLap)
 	if(m_ConnTable.Search(pOverLap->u64SessionID, pConnOverLap))
 	{
 		m_pCoreLog->Write("%llu can't be found", pOverLap->u64SessionID);
+		m_IONetSndMemQue.Push((long)pOverLap);
 		return 2;
 	}
 
