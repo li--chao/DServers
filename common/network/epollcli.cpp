@@ -250,8 +250,8 @@ void LcEpollCli::EpollRecv(OverLap* pOverLap)
 		ret = recv(pOverLap->fd, pOverLap->szpComBuf + pOverLap->uiFinishLen, pOverLap->uiComLen, 0);
 		if(ret == 0 || ret > (int)pOverLap->uiComLen)
 		{
+			m_pCoreLog->Write("connect %llu closed", pOverLap->u64SessionID);
 			RemoveConnect(pOverLap);
-			m_pCoreLog->Write("connect %llu closed");
 			return;
 		}
 		else if(ret == -1 && errno == EAGAIN)
@@ -260,8 +260,8 @@ void LcEpollCli::EpollRecv(OverLap* pOverLap)
 		}
 		else if(ret == -1)
 		{
-			RemoveConnect(pOverLap);
 			m_pCoreLog->Write("connect %llu closed", pOverLap->u64SessionID);
+			RemoveConnect(pOverLap);
 			return;
 		}
 
