@@ -78,6 +78,7 @@ int main(int argc, char** argv)
 	printf("sessionID = %llu\n", unGetSessionIDRespd.m_GetSessionIDRespd.m_u64SessionID);
 	printf("end code = %u\n", unGetSessionIDRespd.m_GetSessionIDRespd.m_usEndCode);
 
+/**
 	UnGetIOPacket unGetIOPacket;
 	unGetIOPacket.m_GetIOPacket.m_phPrtcolHead.m_uiIdentifyCode = IDENTIFY_CODE;
 	unGetIOPacket.m_GetIOPacket.m_phPrtcolHead.m_uiOperateCode = GET_IO_PACKET;
@@ -89,10 +90,11 @@ int main(int argc, char** argv)
 	{
 		UnGetIOPacketRespd unGetIOPacketRespd;
 		send(sock, unGetIOPacket.m_szaPacketBuff, sizeof(unGetIOPacket.m_GetIOPacket), MSG_NOSIGNAL);
-//		recv(sock, unGetIOPacketRespd.m_szaPacketBuff, sizeof(unGetIOPacketRespd.m_GetIOPacketRespd), 0);
-//		printf("packet recv = %llu\n", unGetIOPacketRespd.m_GetIOPacketRespd.m_u64PacketRecv);
-//		printf("packet send = %llu\n", unGetIOPacketRespd.m_GetIOPacketRespd.m_u64PacketSend);
+		recv(sock, unGetIOPacketRespd.m_szaPacketBuff, sizeof(unGetIOPacketRespd.m_GetIOPacketRespd), 0);
+		printf("packet recv = %llu\n", unGetIOPacketRespd.m_GetIOPacketRespd.m_u64PacketRecv);
+		printf("packet send = %llu\n", unGetIOPacketRespd.m_GetIOPacketRespd.m_u64PacketSend);
 	}
+**/
 
 /*
 	UnHeartBeat heartBeatPack;

@@ -135,6 +135,15 @@ int TestServ::HandleHeartBeat(OverLap* pOverLap)
 {
 	m_pLog->Write("HandleHeartBeat");
 	pOverLap->u64HeartBeatRecv = time(NULL);
+
+	long lAddr = 0;
+	m_pExtServNet->RequestSnd(lAddr);
+
+	OverLap* pSndOverLap = (OverLap*)lAddr;
+	pSndOverLap->u64SessionID = pOverLap->u64SessionID;
+	pSndOverLap->uiSndComLen = pOverLap->uiPacketLen;
+	memcpy(pSndOverLap->szpComBuf, pOverLap->szpComBuf, pOverLap->uiComLen);
+	m_pExtServNet->SendData(pSndOverLap);
 	return 0;
 }
 

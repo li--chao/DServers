@@ -173,10 +173,11 @@ void* TestServ::Thread_InnerNet(void* vparam)
 	while(1)
 	{
 		long lptr = 0;
-		LcAbstractCli* pCli = pServ->m_pClusters[pServ->m_pBaseConfig->m_eClusterType].m_pCli;
+		LcAbstractCli* pCli = pServ->m_pClusters[E_ClusterType_B].m_pCli;
 		pCli->GetRequest(lptr);
 		OverLap* pOverLap = (OverLap*)lptr;
 		unsigned int uiOperateCode = *(unsigned int*)(pOverLap->szpComBuf + OFFSET_OPERATE_LEN);
+		pServ->m_pLog->Write("get request: %u", uiOperateCode);
 		int ret = 0;
 		switch(uiOperateCode)
 		{

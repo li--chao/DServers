@@ -39,7 +39,7 @@ int LcEpollCli::Init(BaseConfig* pBaseConfig, TextLog* pLog)
 		return -1;
 	}
 
-	if(m_IONetWorkMemQue.Init(pBaseConfig->m_uiCliMaxOverLapNum))
+	if(m_IONetWorkQue.Init(pBaseConfig->m_uiCliMaxOverLapNum))
 	{
 		return -1;
 	}
@@ -101,7 +101,7 @@ void LcEpollCli::RequestSnd(long& lAddr)
 
 void LcEpollCli::ReleaseRequest(const long& lAddr)
 {
-	m_IONetWorkQue.Push(lAddr);
+	m_IONetWorkMemQue.Push(lAddr);
 }
 
 int LcEpollCli::PushRequest(OverLap* pOverLap)
@@ -151,6 +151,12 @@ int LcEpollCli::Connect(const char* szpNodeIP, const unsigned short& usNodePort,
 	nodeSockAddr.sin_family = AF_INET;
 	nodeSockAddr.sin_addr.s_addr = inet_addr(szpNodeIP);
 	nodeSockAddr.sin_port = htons(usNodePort);
+
+	if(FileUtil::SetNoBlock(fd))
+	{
+		close(fd);
+		return -2;
+	}
 
 	while(connect(fd, (sockaddr*)&nodeSockAddr, sizeof(nodeSockAddr)) == -1)
 	{
