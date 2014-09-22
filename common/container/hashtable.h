@@ -211,6 +211,7 @@ public:
 				pthread_mutex_unlock(&m_TableLock);
 				return 0;
 			}
+			szpBucket = LcBucket::GetNextBucketAddr(szpBucket);
 		}
 		pthread_mutex_unlock(&m_TableLock);
 		return 1;
