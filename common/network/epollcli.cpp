@@ -139,7 +139,7 @@ int LcEpollCli::PushRequest(OverLap* pOverLap)
 	ev.data.ptr = (void*)pConnOverLap;
 	if(epoll_ctl(m_epSocket, EPOLL_CTL_MOD, pConnOverLap->fd, &ev) == -1)
 	{
-		m_pCoreLog->Write("epoll_ctl_mod EPOLLOUT error");
+		m_pCoreLog->Write("error: epoll_ctl_mod EPOLLOUT error");
 		RemoveConnect(pConnOverLap);
 	}
 	return 0;
@@ -250,7 +250,7 @@ void LcEpollCli::EpollRecv(OverLap* pOverLap)
 		ret = recv(pOverLap->fd, pOverLap->szpComBuf + pOverLap->uiFinishLen, pOverLap->uiComLen, 0);
 		if(ret == 0 || ret > (int)pOverLap->uiComLen)
 		{
-			m_pCoreLog->Write("connect %llu closed", pOverLap->u64SessionID);
+			m_pCoreLog->Write("error: ret == 0 || ret > %u connect %llu closed", pOverLap->uiComLen, pOverLap->u64SessionID);
 			RemoveConnect(pOverLap);
 			return;
 		}
@@ -260,7 +260,7 @@ void LcEpollCli::EpollRecv(OverLap* pOverLap)
 		}
 		else if(ret == -1)
 		{
-			m_pCoreLog->Write("connect %llu closed", pOverLap->u64SessionID);
+			m_pCoreLog->Write("error: ret < 0, connect %llu closed", pOverLap->u64SessionID);
 			RemoveConnect(pOverLap);
 			return;
 		}
@@ -294,6 +294,7 @@ void LcEpollCli::EpollSend(OverLap* pOverLap)
 
 	while(pSndList)
 	{
+		pSndList->uiSndFinishLen = 0;
 		while(pSndList->uiSndComLen > 0)
 		{
 			int ret = send(fd, pSndList->szpComBuf + pSndList->uiSndFinishLen, pSndList->uiSndComLen, MSG_NOSIGNAL);
@@ -370,6 +371,7 @@ int LcEpollCli::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 			case 1:	//	包长度不够
 				return 3;
 			case 2:	//	校验失败
+				m_pCoreLog->Write("error: check head error IdentifyCode = %u(expected: %u)", *(unsigned int*)pOverLap->szpComBuf, IDENTIFY_CODE);
 				return 1;
 			}
 
@@ -385,6 +387,7 @@ int LcEpollCli::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 			case 1:	//	长度不够
 				return 4;
 			case 2:	//	校验失败
+				m_pCoreLog->Write("error: check end error");
 				return 2;
 			}
 		}

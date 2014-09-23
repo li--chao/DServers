@@ -413,7 +413,7 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 		if(ret == 0 || ret > (int)pOverLap->uiComLen)
 		{
 			RemoveConnect(pOverLap);
-			m_txlNetLog->Write("peer(%s:%u) close", szaPeerIP, ntohs(pOverLap->usPeerPort));
+			m_txlNetLog->Write("error: serv peer(%s:%u) close", szaPeerIP, ntohs(pOverLap->usPeerPort));
 			return;
 		}
 		else if(ret == -1 && errno == EAGAIN)
@@ -425,7 +425,7 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 		{
 			// error when recv data
 			RemoveConnect(pOverLap);
-			m_txlNetLog->Write("recv data from peer(%s:%u) error", szaPeerIP, ntohs(pOverLap->usPeerPort));
+			m_txlNetLog->Write("error: serv recv data from peer(%s:%u) error", szaPeerIP, ntohs(pOverLap->usPeerPort));
 			return;
 		}
 
@@ -459,6 +459,7 @@ void LcEpollNet::EpollSend(OverLap* pOverLap)
 
 	while(pSndList)
 	{
+		pSndList->uiSndFinishLen = 0;
 		while(pSndList->uiSndComLen > 0)
 		{
 			int ret = send(fd, pSndList->szpComBuf + pSndList->uiSndFinishLen, pSndList->uiSndComLen, MSG_NOSIGNAL);
@@ -508,7 +509,7 @@ int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 				m_txlNetLog->Write("%d bytes is not long enough to check head", pOverLap->uiFinishLen);
 				return 3;
 			case 2:	//	校验失败
-				m_txlNetLog->Write("check head error, connect will be closed");
+				m_txlNetLog->Write("error: check head error, connect will be closed ID_Code = %u(expectd: %u)", *(unsigned int*)pOverLap->szpComBuf, IDENTIFY_CODE);
 				return 1;
 			}
 		}
@@ -517,7 +518,7 @@ int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 		switch(m_pChecker->CheckPacketEnd(pOverLap, m_pBaseConfig->m_uiHeadPacketSize, m_pBaseConfig->m_uiMaxPacketSize))	//	校验包尾
 		{
 		case 0:	//	包尾校验成功，bIsHeadChked设为false，移动内存，并重新给重叠结构的uiComLen和uiFinishLen赋值校验下一个包，然后将完整的包送到工作线程
-			m_txlNetLog->Write("check end success");
+			m_txlNetLog->Write("error: check end success");
 			bIsHeadChked = false;
 			SendToWorkQue(pOverLap, uiPacketLen);
 			memcpy(pOverLap->szpComBuf, pOverLap->szpComBuf + uiPacketLen, pOverLap->uiFinishLen - uiPacketLen);
