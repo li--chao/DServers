@@ -85,7 +85,7 @@ int TestServConfig::ReadCfgFile(const char* szpFileName)
 		}
 		else if(strcmp(szaFileBuff, "ServerType") == 0)
 		{
-//			m_eClusterType = (EClusterType)atoi(szpValue);
+			m_eClusterType = (EClusterType)atoi(szpValue);
 		}
 		else if(strcmp(szaFileBuff, "BServerCfgFile") == 0)
 		{
