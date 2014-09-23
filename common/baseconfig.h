@@ -13,6 +13,7 @@ enum EClusterType
 	E_ClusterType_None,
 	E_ClusterType_A,
 	E_ClusterType_B,
+	E_ClusterType_C,
 	E_ClusterType_Num
 };
 
