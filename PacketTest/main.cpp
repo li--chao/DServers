@@ -62,7 +62,7 @@ int main(int argc, char** argv)
 		printf("recv data: A = %u B = %u\n", cRecvTstProtcl.m_tplTestProtocol.m_uiTestDataA, cRecvTstProtcl.m_tplTestProtocol.m_uiTestDataB);
 	}
 **/
-
+	while(1){
 	UnGetSessionID unGetSessionID;
 	unGetSessionID.m_GetSessionID.m_uiIdentifyCode = IDENTIFY_CODE;
 	unGetSessionID.m_GetSessionID.m_phPrtcolHead.m_uiIdentifyCode = IDENTIFY_CODE;
@@ -77,7 +77,7 @@ int main(int argc, char** argv)
 	printf("identify code = %u(expected: %u)\n", unGetSessionIDRespd.m_GetSessionIDRespd.m_phPrtcolHead.m_uiIdentifyCode, IDENTIFY_CODE);
 	printf("sessionID = %llu\n", unGetSessionIDRespd.m_GetSessionIDRespd.m_u64SessionID);
 	printf("end code = %u\n", unGetSessionIDRespd.m_GetSessionIDRespd.m_usEndCode);
-
+}
 /**
 	UnGetIOPacket unGetIOPacket;
 	unGetIOPacket.m_GetIOPacket.m_phPrtcolHead.m_uiIdentifyCode = IDENTIFY_CODE;
