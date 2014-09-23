@@ -518,7 +518,7 @@ int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 		switch(m_pChecker->CheckPacketEnd(pOverLap, m_pBaseConfig->m_uiHeadPacketSize, m_pBaseConfig->m_uiMaxPacketSize))	//	校验包尾
 		{
 		case 0:	//	包尾校验成功，bIsHeadChked设为false，移动内存，并重新给重叠结构的uiComLen和uiFinishLen赋值校验下一个包，然后将完整的包送到工作线程
-			m_txlNetLog->Write("error: check end success");
+			m_txlNetLog->Write("check end success");
 			bIsHeadChked = false;
 			SendToWorkQue(pOverLap, uiPacketLen);
 			memcpy(pOverLap->szpComBuf, pOverLap->szpComBuf + uiPacketLen, pOverLap->uiFinishLen - uiPacketLen);
@@ -529,7 +529,7 @@ int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 			m_txlNetLog->Write("packet len: %d, read len: %d not long enough to check end", uiPacketLen, pOverLap->uiFinishLen);
 			return 4;
 		case 2:	//	包尾校验失败
-			m_txlNetLog->Write("check end error, connect will be closed");
+			m_txlNetLog->Write("error: check end error, connect will be closed");
 			return 2;
 		}
 	}
