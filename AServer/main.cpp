@@ -52,7 +52,13 @@ int main(int argc, char** argv)
 	Cluster* cCluster = new Cluster[E_ClusterType_Num];
 	cCluster[E_ClusterType_B].m_eClusterType = E_ClusterType_B;
 	cCluster[E_ClusterType_B].m_pCli = pEpollCli;
+	cCluster[E_ClusterType_C].m_eClusterType = E_ClusterType_C;
+	cCluster[E_ClusterType_C].m_pCli = pEpollCli;
 	if(cCluster[E_ClusterType_B].LoadClusterInfo(servCfg.szaBServClusterCfgFile))
+	{
+		return 1;
+	}
+	if(cCluster[E_ClusterType_C].LoadClusterInfo(servCfg.szaCServClusterCfgFile))
 	{
 		return 1;
 	}

@@ -85,11 +85,15 @@ int TestServConfig::ReadCfgFile(const char* szpFileName)
 		}
 		else if(strcmp(szaFileBuff, "ServerType") == 0)
 		{
-//			m_eClusterType = (EClusterType)atoi(szpValue);
+			m_eClusterType = (EClusterType)atoi(szpValue);
 		}
 		else if(strcmp(szaFileBuff, "BServerCfgFile") == 0)
 		{
 			strcpy(szaBServClusterCfgFile, szpValue);
+		}
+		else if(strcmp(szaFileBuff, "CServerCfgFile") == 0)
+		{
+			strcpy(szaCServClusterCfgFile, szpValue);
 		}
 		else if(strcmp(szaFileBuff, "HeartBeatSndInterval") == 0)
 		{
