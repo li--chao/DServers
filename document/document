@@ -1,3 +1,15 @@
+服务器种类和架构：
+	客户接入服务器(CustomerAccess)
+	客服接入服务器(WaiterAccess)
+	转发服务器(WaiterServer)
+	数据库服务器(DataCenter)
+
+	CustomerAccess					WaiterAccess
+		|	|							 | |
+		|	|------WaiterServer----------| |
+		|				||				   |
+		|-----------DataCenter-------------|
+
 配置文件
 
 网络IO
