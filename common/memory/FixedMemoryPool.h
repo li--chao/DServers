@@ -1,9 +1,3 @@
-﻿/**
- * @Description: Fixed Memory Pool
- * @Author: guoyc.2009@gmail.com
- * @Create Date: 2011-10
-*/
-
 #ifndef _FIXED_MEMORY_POOL_H_
 #define _FIXED_MEMORY_POOL_H_
 
