@@ -27,7 +27,7 @@ private:
 	unsigned int m_uiHeadSize;
 
 	FixedMemoryPool *m_pFixedMem;
-	unsigned int *m_uipUnitSize; //内存递减
+	unsigned int *m_uipUnitSize;
 	unsigned short m_usPoolNum;
 
 	pthread_mutex_t m_mtxMem;
