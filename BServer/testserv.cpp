@@ -5,10 +5,12 @@ TestServ::TestServ()
 
 }
 
-TestServ::TestServ(TextLog* pLog, LcAbstractNet* pServNet)
+TestServ::TestServ(TextLog* pLog, LcAbstractNet* pServNet, Cluster* pClusters, BaseConfig* pBaseConfig)
 {
 	m_pLog = pLog;
 	m_pExtServNet = pServNet;
+	m_pClusters = pClusters;
+	m_pBaseConfig = pBaseConfig;
 }
 
 int TestServ::MainFun()
@@ -41,6 +43,16 @@ int TestServ::MainFun()
 			m_pExtServNet->RemoveConnectByID(pOverLap->u64SessionID);
 		}
 		
+	}
+	return 0;
+}
+
+int TestServ::StartThread()
+{
+	pthread_t heartBeatThrd;
+	if(pthread_create(&heartBeatThrd, NULL, Thread_HeartBeat, this))
+	{
+		return 1;
 	}
 	return 0;
 }
@@ -121,8 +133,38 @@ int TestServ::HandleGetIOPacket(OverLap* pOverLap)
 
 int TestServ::HandleHeartBeat(OverLap* pOverLap)
 {
-
 	m_pLog->Write("HandleHeartBeat");
+	pOverLap->u64HeartBeatRecv = time(NULL);
 
+	long lAddr = 0;
+	m_pExtServNet->RequestSnd(lAddr);
+
+	OverLap* pSndOverLap = (OverLap*)lAddr;
+	pSndOverLap->u64SessionID = pOverLap->u64SessionID;
+	pSndOverLap->uiSndComLen = pOverLap->uiPacketLen;
+	memcpy(pSndOverLap->szpComBuf, pOverLap->szpComBuf, pOverLap->uiComLen);
+	m_pExtServNet->SendData(pSndOverLap);
 	return 0;
+}
+
+void* TestServ::Thread_HeartBeat(void* vparam)
+{
+	TestServ* pServ = (TestServ*)vparam;
+
+	while(1)
+	{
+		for(int i = 0; i < (int)E_ClusterType_Num; i++)
+		{
+			if(pServ->m_pClusters[i].m_eClusterType != E_ClusterType_None && 
+			   pServ->m_pClusters[i].m_eClusterType != E_ClusterType_Client &&
+			   pServ->m_pClusters[i].m_eClusterType != pServ->m_pBaseConfig->m_eClusterType)
+			{
+				pServ->m_pClusters[i].BroadHeartBeat();
+			}
+		}
+
+		sleep(pServ->m_pBaseConfig->m_uiHeartBeatSndInterval);
+	}
+
+	return NULL;
 }

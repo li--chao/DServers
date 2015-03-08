@@ -24,7 +24,10 @@ public:
 	int ReadCfgFile(const char* szpFileName);
 	int CheckCfg();
 
+	char szaBServClusterCfgFile[64];
+	char szaCServClusterCfgFile[64];
 private:
+	
 };
 
 

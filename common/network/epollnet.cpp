@@ -10,6 +10,7 @@ LcEpollNet::LcEpollNet()
 	m_pIORecvQueue = NULL;
 	m_pIOWorkQueue = NULL;
 	m_pIOSndQueue = NULL;
+	m_ppConnOverLaps = NULL;
 	m_epSocket = -1;
 	m_pEpollEvs = NULL;
 	m_szpRecvPackMem = NULL;
@@ -25,6 +26,18 @@ LcEpollNet::~LcEpollNet()
 
 int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 {
+	if(pthread_mutex_init(&m_cSyncSendData, NULL))
+	{
+		m_txlNetLog->Write("mutex init error");
+		return 1;
+	}
+
+	if(m_ConnectTable.Init(pBaseConfig->m_uiMaxOverLapNum))
+	{
+		m_txlNetLog->Write("connect hash table init error");
+		return 1;
+	}
+
 	m_txlNetLog = &textLog;
 	m_pBaseConfig = pBaseConfig;
 
@@ -59,6 +72,7 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 	m_pIORecvQueue = new OverLap[pBaseConfig->m_uiMaxOverLapNum];
 	m_pIOWorkQueue = new OverLap[pBaseConfig->m_uiMaxOverLapNum];
 	m_pIOSndQueue = new OverLap[pBaseConfig->m_uiMaxOverLapNum];
+	m_ppConnOverLaps = new OverLap*[pBaseConfig->m_uiMaxOverLapNum];
 
 	m_szpRecvPackMem = new char [pBaseConfig->m_uiMaxOverLapNum * pBaseConfig->m_uiMaxPacketSize];
 	m_szpWorkPackMem = new char [pBaseConfig->m_uiMaxOverLapNum * pBaseConfig->m_uiMaxPacketSize];
@@ -68,7 +82,7 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 
 	if(m_pIORecvQueue == NULL || m_pIOWorkQueue == NULL || m_pIOSndQueue == NULL ||
 	   m_szpRecvPackMem == NULL || m_szpWorkPackMem == NULL || m_szpSndPackMem == NULL || 
-	   m_pEpollEvs == NULL || m_pChecker == NULL)
+	   m_pEpollEvs == NULL || m_pChecker == NULL || m_ppConnOverLaps == NULL)
 	{
 		m_txlNetLog->Write("no enough memory for server!");
 		return -1;
@@ -92,6 +106,12 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 		return -1;
 	}
 
+	if(m_IONetSndMemQue.Init(pBaseConfig->m_uiMaxOverLapNum))
+	{
+		m_txlNetLog->Write("snd memory queue init error");
+		return -1;
+	}
+
 	for(int i = 0; i < (int)pBaseConfig->m_uiMaxOverLapNum; i++)
 	{
 		m_pIORecvQueue[i].szpComBuf = m_szpRecvPackMem + (i * pBaseConfig->m_uiMaxPacketSize);
@@ -100,6 +120,7 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 
 		m_IONetConnQue.Push((long)&m_pIORecvQueue[i]);
 		m_IONetWorkMemQue.Push((long)&m_pIOWorkQueue[i]);
+		m_IONetSndMemQue.Push((long)&m_pIOSndQueue[i]);
 	}
 
 	if(BindAndLsn(pBaseConfig->m_iBackLog, pBaseConfig->m_usServPort))
@@ -111,12 +132,35 @@ int LcEpollNet::Init(BaseConfig* pBaseConfig, TextLog& textLog)
 
 void LcEpollNet::RemoveConnect(OverLap* pOverLap)
 {
+	if(m_ConnectTable.DeleteByKey(pOverLap->u64SessionID))	//	在哈希表中查找连接
+	{
+		return;
+	}
+
 	struct epoll_event ev;
-	m_IONetConnQue.Push((long)pOverLap);
-	epoll_ctl(m_epSocket, EPOLL_CTL_DEL, pOverLap->fd, &ev);
-	close(pOverLap->fd);
+	epoll_ctl(m_epSocket, EPOLL_CTL_DEL, pOverLap->fd, &ev);	//	在epoll中删掉侦听的socket
+	close(pOverLap->fd);										//	关闭socket
 	pOverLap->u64SessionID = 0;
 	pOverLap->fd = -1;
+	ReleaseSndList(pOverLap);				//	释放发送链
+	m_IONetConnQue.Push((long)pOverLap);	//	放回内存队列
+}
+
+void LcEpollNet::RemoveConnectByID(const unsigned long long& u64SessionID)
+{
+	OverLap* pOverLap = NULL;
+	if(m_ConnectTable.DeleteByKey(u64SessionID, pOverLap))	//	在哈希表中查找连接
+	{
+		return;
+	}
+
+	struct epoll_event ev;
+	epoll_ctl(m_epSocket, EPOLL_CTL_DEL, pOverLap->fd, &ev);	//	在epoll中删掉侦听的socket
+	close(pOverLap->fd);										//	关闭socket
+	pOverLap->u64SessionID = 0;
+	pOverLap->fd = -1;
+	ReleaseSndList(pOverLap);				//	释放发送链
+	m_IONetConnQue.Push((long)pOverLap);	//	放回内存队列中
 }
 
 void LcEpollNet::GetRequest(long& lptr)
@@ -129,17 +173,54 @@ void LcEpollNet::ReleaseRequest(const long& lptr)
 	m_IONetWorkMemQue.Push(lptr);
 }
 
-void LcEpollNet::SendData(const long& lptr)
+void LcEpollNet::RequestSnd(long& lptr)
 {
-	OverLap* pOverLap = (OverLap*)lptr;
-	struct epoll_event ev;
-	ev.events = EPOLLOUT;
-	ev.data.ptr = (void*)pOverLap;
-	if(epoll_ctl(m_epSocket, EPOLL_CTL_MOD, pOverLap->fd, &ev) == -1)
+	m_IONetSndMemQue.Pop(lptr);
+}
+
+void LcEpollNet::ReleaseSndReq(const long& lptr)
+{
+	m_IONetSndMemQue.Push(lptr);
+}
+
+void LcEpollNet::SendData(OverLap* pSndOverLap)
+{
+	if(pSndOverLap == NULL)
 	{
-		m_txlNetLog->Write("SendData Error");
-		RemoveConnect(pOverLap);
+		return;
 	}
+	else if(pSndOverLap->uiSndComLen == 0)
+	{
+		m_IONetSndMemQue.Push((long)pSndOverLap);
+		return;
+	}
+
+	OverLap* pOverLap = NULL;
+	if(m_ConnectTable.Search(pSndOverLap->u64SessionID, pOverLap) == 0)
+	{
+		OverLap* pTmp = pOverLap;
+		pthread_mutex_lock(&m_cSyncSendData);
+		while(pTmp->pSndList)
+		{
+			pTmp = pTmp->pSndList;
+		}
+
+		pTmp->pSndList = pSndOverLap;
+		pthread_mutex_unlock(&m_cSyncSendData);
+
+		struct epoll_event ev;
+		ev.events = EPOLLOUT | EPOLLIN | EPOLLET;
+		ev.data.ptr = (void*)pOverLap;
+		if(epoll_ctl(m_epSocket, EPOLL_CTL_MOD, pOverLap->fd, &ev) == -1)
+		{
+			m_txlNetLog->Write("epoll_ctl_Mod error SendData Error");
+			RemoveConnect(pOverLap);
+		}
+
+		return;
+	}
+
+	m_txlNetLog->Write("SessionID %llu not found", pSndOverLap->u64SessionID);
 }
 
 int LcEpollNet::BindAndLsn(const int& iBackLog, const unsigned short& usPort)
@@ -149,7 +230,7 @@ int LcEpollNet::BindAndLsn(const int& iBackLog, const unsigned short& usPort)
 	svrSockAddr.sin_port = htons(usPort);
 	svrSockAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-	m_epSocket = epoll_create(64);
+	m_epSocket = epoll_create(m_pBaseConfig->m_uiConcurrentNum);
 	if(m_epSocket == -1)
 	{
 		m_txlNetLog->Write("epoll_create error!");
@@ -182,6 +263,7 @@ int LcEpollNet::BindAndLsn(const int& iBackLog, const unsigned short& usPort)
 int LcEpollNet::StartThread()
 {
 	pthread_t posix_thrd;
+	pthread_t heartbeat_thrd;
 	int ret = pthread_create(&posix_thrd, NULL, Thread_NetServ, this);
 	if(ret)
 	{
@@ -189,6 +271,12 @@ int LcEpollNet::StartThread()
 		return -1;
 	}
 
+	ret = pthread_create(&heartbeat_thrd, NULL, Thread_HeartBeat, this);
+	if(ret)
+	{
+		m_txlNetLog->Write("pthread_create Thread_HeartBeat error!");
+		return -1;
+	}
 	return 0;
 }
 
@@ -241,10 +329,38 @@ void* LcEpollNet::Thread_NetServ(void* param)
 			{
 				pNet->EpollSend((OverLap*)pNet->m_pEpollEvs[i].data.ptr);	
 			}
+			else
+			{
+				OverLap* pOverLap = (OverLap*)pNet->m_pEpollEvs[i].data.ptr;
+				pNet->RemoveConnect(pOverLap);		
+			}
 		}
 	}
 
 	pNet->m_txlNetLog->Write("thread is going to be over");
+	return NULL;
+}
+
+void* LcEpollNet::Thread_HeartBeat(void* param)
+{
+	LcEpollNet* pNet = (LcEpollNet*)param;
+	while(1)
+	{
+		unsigned int uiConnNum = 0;
+		pNet->m_ConnectTable.GetValues(pNet->m_ppConnOverLaps, uiConnNum);
+		unsigned long long tNow = time(NULL);
+		for(unsigned int u = 0; u < uiConnNum; u++)
+		{
+			OverLap* pOverLap = pNet->m_ppConnOverLaps[u];
+			if(tNow - pOverLap->u64HeartBeatRecv > pNet->m_pBaseConfig->m_uiHeartBeatInterval)
+			{
+				pNet->m_txlNetLog->Write("Connect %llu HeartBeat OverTime", pOverLap->u64SessionID);
+				// to do close connect
+				pNet->RemoveConnect(pOverLap);
+			}
+		}
+		sleep(pNet->m_pBaseConfig->m_uiHeartBeatInterval);
+	}
 	return NULL;
 }
 
@@ -254,12 +370,17 @@ void LcEpollNet::EpollAccept(const int& fd, const unsigned int& uiPeerIP, const 
 	m_IONetConnQue.Pop(ptr);
 	OverLap* pOverLap = (OverLap*)ptr;
 
+	/***		初始化重叠结构，初始化的成员今后可能会扩展		****/
 	pOverLap->uiComLen = m_pBaseConfig->m_uiMaxPacketSize;
 	pOverLap->uiFinishLen = 0;
 	pOverLap->uiPeerIP = uiPeerIP;
 	pOverLap->usPeerPort = usPeerPort;
 	pOverLap->fd = fd;
-	pOverLap->u64LastRecvPack = time(0);
+	pOverLap->u64PacketRecv = 0;
+	pOverLap->u64PacketSnd = 0;
+	pOverLap->uiPacketLen = 0;
+	pOverLap->u64HeartBeatRecv = time(NULL);
+	/***		初始化重叠结构，初始化的成员今后可能会扩展		****/
 
 	struct epoll_event ev;
 	ev.events = EPOLLIN | EPOLLET;
@@ -273,6 +394,10 @@ void LcEpollNet::EpollAccept(const int& fd, const unsigned int& uiPeerIP, const 
 		sprintf(szaPeerIP, "%u.%u.%u.%u", *((unsigned char*)&uiPeerIP), *((unsigned char*)&uiPeerIP + 1), *((unsigned char*)&uiPeerIP + 2), *((unsigned char*)&uiPeerIP + 3));
 		m_txlNetLog->Write("add Peer(%s:%u) to epoll error", szaPeerIP, usPeerPort);
 	}
+	
+	unsigned long long u64ConnectID = time(NULL);
+	pOverLap->u64SessionID = u64ConnectID;
+	m_ConnectTable.Insert(u64ConnectID, pOverLap);
 }
 
 void LcEpollNet::EpollRecv(OverLap* pOverLap)
@@ -288,7 +413,7 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 		if(ret == 0 || ret > (int)pOverLap->uiComLen)
 		{
 			RemoveConnect(pOverLap);
-			m_txlNetLog->Write("peer(%s:%u) close", szaPeerIP, ntohs(pOverLap->usPeerPort));
+			m_txlNetLog->Write("error: serv peer(%s:%u) close", szaPeerIP, ntohs(pOverLap->usPeerPort));
 			return;
 		}
 		else if(ret == -1 && errno == EAGAIN)
@@ -300,7 +425,7 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 		{
 			// error when recv data
 			RemoveConnect(pOverLap);
-			m_txlNetLog->Write("recv data from peer(%s:%u) error", szaPeerIP, ntohs(pOverLap->usPeerPort));
+			m_txlNetLog->Write("error: serv recv data from peer(%s:%u) error", szaPeerIP, ntohs(pOverLap->usPeerPort));
 			return;
 		}
 
@@ -321,30 +446,51 @@ void LcEpollNet::EpollRecv(OverLap* pOverLap)
 			continue;
 		}
 	}
-
 }
 
 void LcEpollNet::EpollSend(OverLap* pOverLap)
 {
-/**
-	while(1)
+	int fd = pOverLap->fd;
+
+	pthread_mutex_lock(&m_cSyncSendData);
+	OverLap* pSndList = pOverLap->pSndList;
+	pOverLap->pSndList = NULL;
+	pthread_mutex_unlock(&m_cSyncSendData);
+
+	while(pSndList)
 	{
-		int ret = send(pOverLap->fd, pOverLap->szpComBuf, pOverLap->uiComLen, MSG_NOSIGNAL);
-		m_txlNetLog->Write("send ret(%d), %s(%d)", ret, strerror(errno), errno);
-		if(ret == -1 && errno == EAGAIN)
-			continue;
-		else
-			break;
+		pSndList->uiSndFinishLen = 0;
+		while(pSndList->uiSndComLen > 0)
+		{
+			int ret = send(fd, pSndList->szpComBuf + pSndList->uiSndFinishLen, pSndList->uiSndComLen, MSG_NOSIGNAL);
+			if(ret == -1 && errno == EAGAIN)	// 系统缓存写满重新放入发送链表
+			{
+				// to do 发起epoll写事件
+				SendData(pSndList);
+				return;
+			}
+			else if(ret == 0 || ret > (int)pSndList->uiSndComLen)
+			{
+				RemoveConnect(pOverLap);
+				return;
+			}
+			else if(ret == -1)
+			{
+				RemoveConnect(pOverLap);
+				return;
+			}
+
+			pSndList->uiSndFinishLen += ret;
+			pSndList->uiSndComLen -= ret;
+		}
+
+		pOverLap->u64PacketSnd += 1;
+		m_txlNetLog->Write("u64PacketRecv = %u u64PacketSnd = %u, pSndOverLap->uiSndComLen = %u, pSndOverLap->uiSndFinishLen = %u", pOverLap->u64PacketRecv, pOverLap->u64PacketSnd, pSndList->uiSndComLen, pSndList->uiSndFinishLen);
+		OverLap* pTmp = pSndList;			//	将发送的重叠结构指针指向一个临时指针
+		pSndList = pSndList->pSndList;		//	准备发送下一个
+		pTmp->pSndList = NULL;				//	断开和后面的发送链
+		m_IONetSndMemQue.Push((long)pTmp);		//	放回发送内存队列
 	}
-	struct epoll_event ev;
-	ev.events = EPOLLIN | EPOLLET;
-	ev.data.ptr = (void*)pOverLap;
-	if(epoll_ctl(m_epSocket, EPOLL_CTL_MOD, pOverLap->fd, &ev) == -1)
-	{
-		m_txlNetLog->Write("EPOll_CTL_MOD error when EpollSend");
-		RemoveConnect(pOverLap);
-	}
-**/
 }
 
 int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
@@ -363,7 +509,7 @@ int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 				m_txlNetLog->Write("%d bytes is not long enough to check head", pOverLap->uiFinishLen);
 				return 3;
 			case 2:	//	校验失败
-				m_txlNetLog->Write("check head error, connect will be closed");
+				m_txlNetLog->Write("error: check head error, connect will be closed ID_Code = %u(expectd: %u)", *(unsigned int*)pOverLap->szpComBuf, IDENTIFY_CODE);
 				return 1;
 			}
 		}
@@ -374,22 +520,16 @@ int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 		case 0:	//	包尾校验成功，bIsHeadChked设为false，移动内存，并重新给重叠结构的uiComLen和uiFinishLen赋值校验下一个包，然后将完整的包送到工作线程
 			m_txlNetLog->Write("check end success");
 			bIsHeadChked = false;
+			SendToWorkQue(pOverLap, uiPacketLen);
 			memcpy(pOverLap->szpComBuf, pOverLap->szpComBuf + uiPacketLen, pOverLap->uiFinishLen - uiPacketLen);
 			pOverLap->uiFinishLen -= uiPacketLen;
 			pOverLap->uiComLen = m_pBaseConfig->m_uiMaxPacketSize - pOverLap->uiFinishLen;
-			SendToWorkQue(pOverLap, uiPacketLen);
-/**
-			long lWorkMem;
-			char* szpWorkMem = (char*)lWorkMem;
-			memcpy(szpWorkMem, pOverLap->szpRecvComBuf, uiPacketLen);
-			m_IONetWorkQue.Push(lWorkMem);
-**/
 			break;
 		case 1:	//	读取包的长度小于包的长度
 			m_txlNetLog->Write("packet len: %d, read len: %d not long enough to check end", uiPacketLen, pOverLap->uiFinishLen);
 			return 4;
 		case 2:	//	包尾校验失败
-			m_txlNetLog->Write("check end error, connect will be closed");
+			m_txlNetLog->Write("error: check end error, connect will be closed");
 			return 2;
 		}
 	}
@@ -399,11 +539,40 @@ int LcEpollNet::CheckPacket(OverLap* pOverLap, bool& bIsHeadChked)
 
 void LcEpollNet::SendToWorkQue(OverLap* pOverLap, const unsigned int& uiPacketLen)
 {
+	pOverLap->u64PacketRecv += 1;		// 收包数+1
+	if(*(unsigned int*)(pOverLap->szpComBuf + 4) == HEART_BEAT)
+	{
+		m_txlNetLog->Write("recv heart beat packet");
+		pOverLap->u64HeartBeatRecv = time(NULL);
+	}
 	long lWorkMem = 0;
 	m_IONetWorkMemQue.Pop(lWorkMem);
 	OverLap* pWorkOverLap = (OverLap*)lWorkMem;
 	memcpy(pWorkOverLap->szpComBuf, pOverLap->szpComBuf, uiPacketLen);
-	pWorkOverLap->fd = pOverLap->fd;
+
+	pWorkOverLap->u64SessionID = pOverLap->u64SessionID;
 	pWorkOverLap->uiPacketLen = uiPacketLen;
+	pWorkOverLap->uiPeerIP = pOverLap->uiPeerIP;
+	pWorkOverLap->usPeerPort = pOverLap->usPeerPort;
+	pWorkOverLap->u64PacketRecv = pOverLap->u64PacketRecv;
+	pWorkOverLap->u64PacketSnd = pOverLap->u64PacketSnd;
+
 	m_IONetWorkQue.Push((long)pWorkOverLap);
+}
+
+void LcEpollNet::ReleaseSndList(OverLap* pOverLap)
+{
+	pthread_mutex_lock(&m_cSyncSendData);
+	OverLap* pSndOverLap = pOverLap->pSndList;
+	pOverLap->pSndList = NULL;
+	pthread_mutex_unlock(&m_cSyncSendData);
+
+	while(pSndOverLap)
+	{
+		OverLap* pTmpOverLap = pSndOverLap;
+		pSndOverLap = pSndOverLap->pSndList;
+		m_IONetSndMemQue.Push((long)pTmpOverLap);
+		pTmpOverLap->pSndList = NULL;
+	}
+
 }

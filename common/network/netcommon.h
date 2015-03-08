@@ -25,15 +25,18 @@ struct OverLap
 		uiSndFinishLen = 0;
 		uiPeerIP = 0;
 		usPeerPort = 0;
-		u64LastRecvPack = 0ULL;
 		szpComBuf = NULL;
 		uiPacketLen = 0;
+		pSndList = NULL;
+
+		u64PacketRecv = 0;
+		u64PacketSnd = 0;
+		u64HeartBeatRecv = 0;
 	}
 
 	unsigned long long u64SessionID;
 	char* szpComBuf;
-//	char* szpSndComBuf;
-//	char* szpWorkComBuf;
+	OverLap* pSndList;
 	int fd;
 	unsigned int uiComLen;
 	unsigned int uiFinishLen;
@@ -42,7 +45,10 @@ struct OverLap
 	unsigned int uiPacketLen;
 	unsigned int uiPeerIP;
 	unsigned short usPeerPort;
-	unsigned long long u64LastRecvPack;
+
+	unsigned long long u64PacketRecv;
+	unsigned long long u64PacketSnd;
+	unsigned long long u64HeartBeatRecv;
 };
 
 class LcAbstractNet
@@ -51,15 +57,29 @@ public:
 	virtual int Init(BaseConfig* pBaseConfig, TextLog& textLog) = 0;
 	virtual int StartThread() = 0;
 	virtual void RemoveConnect(OverLap* pOverLap) = 0;
+	virtual void RemoveConnectByID(const unsigned long long& u64SessionID) = 0;
 	virtual void GetRequest(long& lptr) = 0;
-	virtual void ReleaseRequest(const long& ptr) = 0;
-	virtual void SendData(const long& lptr) = 0;
+	virtual void ReleaseRequest(const long& lptr) = 0;
+	virtual void RequestSnd(long& lptr) = 0;
+	virtual void ReleaseSndReq(const long& lptr) = 0;
+	virtual void SendData(OverLap* pOverLap) = 0;
 
 protected:
 	int m_lsnSocket;
 	TextLog* m_txlNetLog;
 
 	virtual int BindAndLsn(const int& iBackLog, const unsigned short& usPort) = 0;
+};
+
+class LcAbstractCli
+{
+public:
+	virtual void RequestSnd(long& lAddr) = 0;
+	virtual void ReleaseRequest(const long& lAddr) = 0;
+	virtual int PushRequest(OverLap* pOverLap) = 0;
+	virtual int Connect(const char* szpNodeIP, const unsigned short& usNodePort, int& fd) = 0;
+	virtual void GetRequest(long& lptr) = 0;
+	virtual void RemoveConnect(OverLap* pOverLap) = 0;
 };
 
 #endif

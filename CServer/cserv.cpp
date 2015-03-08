@@ -1,17 +1,19 @@
-#include "testserv.h"
+#include "cserv.h"
 
-TestServ::TestServ()
+CServ::CServ()
 {
 
 }
 
-TestServ::TestServ(TextLog* pLog, LcAbstractNet* pServNet)
+CServ::CServ(TextLog* pLog, LcAbstractNet* pServNet, Cluster* pClusters, BaseConfig* pBaseConfig)
 {
 	m_pLog = pLog;
 	m_pExtServNet = pServNet;
+	m_pClusters = pClusters;
+	m_pBaseConfig = pBaseConfig;
 }
 
-int TestServ::MainFun()
+int CServ::MainFun()
 {
 	while(1)
 	{
@@ -45,7 +47,17 @@ int TestServ::MainFun()
 	return 0;
 }
 
-int TestServ::HandleTestProtocol(OverLap* pOverLap)
+int CServ::StartThread()
+{
+	pthread_t heartBeatThrd;
+	if(pthread_create(&heartBeatThrd, NULL, Thread_HeartBeat, this))
+	{
+		return 1;
+	}
+	return 0;
+}
+
+int CServ::HandleTestProtocol(OverLap* pOverLap)
 {
 	TestProtocolUn unTestProtocol;
 	memcpy(unTestProtocol.m_szaPacketBuff, pOverLap->szpComBuf, pOverLap->uiPacketLen);
@@ -64,7 +76,7 @@ int TestServ::HandleTestProtocol(OverLap* pOverLap)
 	return 0;
 }
 
-int TestServ::HandleGetSessionID(OverLap* pOverLap)
+int CServ::HandleGetSessionID(OverLap* pOverLap)
 {
 	UnGetSessionID unGetSessionID;
 	memcpy(unGetSessionID.m_szaPacketBuff, pOverLap->szpComBuf, pOverLap->uiPacketLen);
@@ -91,7 +103,7 @@ int TestServ::HandleGetSessionID(OverLap* pOverLap)
 	return 0;
 }
 
-int TestServ::HandleGetIOPacket(OverLap* pOverLap)
+int CServ::HandleGetIOPacket(OverLap* pOverLap)
 {
 	UnGetIOPacket unGetIOPacket;
 	memcpy(unGetIOPacket.m_szaPacketBuff, pOverLap->szpComBuf, pOverLap->uiPacketLen);
@@ -119,10 +131,40 @@ int TestServ::HandleGetIOPacket(OverLap* pOverLap)
 	return 0;
 }
 
-int TestServ::HandleHeartBeat(OverLap* pOverLap)
+int CServ::HandleHeartBeat(OverLap* pOverLap)
 {
-
 	m_pLog->Write("HandleHeartBeat");
+	pOverLap->u64HeartBeatRecv = time(NULL);
 
+	long lAddr = 0;
+	m_pExtServNet->RequestSnd(lAddr);
+
+	OverLap* pSndOverLap = (OverLap*)lAddr;
+	pSndOverLap->u64SessionID = pOverLap->u64SessionID;
+	pSndOverLap->uiSndComLen = pOverLap->uiPacketLen;
+	memcpy(pSndOverLap->szpComBuf, pOverLap->szpComBuf, pOverLap->uiComLen);
+	m_pExtServNet->SendData(pSndOverLap);
 	return 0;
+}
+
+void* CServ::Thread_HeartBeat(void* vparam)
+{
+	CServ* pServ = (CServ*)vparam;
+
+	while(1)
+	{
+		for(int i = 0; i < (int)E_ClusterType_Num; i++)
+		{
+			if(pServ->m_pClusters[i].m_eClusterType != E_ClusterType_None && 
+			   pServ->m_pClusters[i].m_eClusterType != E_ClusterType_Client &&
+			   pServ->m_pClusters[i].m_eClusterType != pServ->m_pBaseConfig->m_eClusterType)
+			{
+				pServ->m_pClusters[i].BroadHeartBeat();
+			}
+		}
+
+		sleep(pServ->m_pBaseConfig->m_uiHeartBeatSndInterval);
+	}
+
+	return NULL;
 }

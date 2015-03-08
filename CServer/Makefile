@@ -1,4 +1,4 @@
-BinName = ServerUnitTest
+BinName = CServer
 CommonPath = ../common
 
 IOModPath = $(CommonPath)/io
@@ -6,11 +6,11 @@ LogModPath = $(CommonPath)/log
 NetWorkModPath = $(CommonPath)/network
 TimeModPath = $(CommonPath)/time
 
-NetworkUtils = $(NetWorkModPath)/epollnet.o $(NetWorkModPath)/netqueue.o $(NetWorkModPath)/lcfullpktchecker.o
+NetworkUtils = $(NetWorkModPath)/epollnet.o $(NetWorkModPath)/netqueue.o $(NetWorkModPath)/lcfullpktchecker.o $(NetWorkModPath)/epollcli.o
 IOUtils = $(IOModPath)/FileUtil.o
 
 COMS = $(NetworkUtils) $(IOUtils)
-OBJS = ./unittest.o ../servconfig.o $(COMS)
+OBJS = ./main.o ./cservconfig.o ./cserv.o $(COMS)
 
 CXX = g++
 CXXFLAGS = -g -Wall -c 

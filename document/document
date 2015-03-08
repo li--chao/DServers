@@ -1,0 +1,63 @@
+服务器种类和架构：
+	客户接入服务器(CustomerAccess)
+	客服接入服务器(WaiterAccess)
+	转发服务器(WaiterServer)
+	数据库服务器(DataCenter)
+
+	CustomerAccess					WaiterAccess
+		|	|							 | |
+		|	|------WaiterServer----------| |
+		|				||				   |
+		|-----------DataCenter-------------|
+
+配置文件
+
+网络IO
+	-) 重叠结构：
+	    对epoll中epoll_event对象中的data.ptr进行扩展(指向重叠结构的指针)，重叠结构中带有	远端的fd，包长度，完成长度(已经写/读了多少字节)，用于发送/读取数据的内存。
+
+	-) 包结构：
+		头部：[----校验码(4bytes)----][----操作码(4bytes)----][----包的长度(4bytes)----]
+		包的长度为包的头部之后剩下的部分的长度。
+		包体：根据不同的通信协议来定义，没有固定的格式。
+		包尾：[----结束码(2bytes)----]
+
+	-)IO/内存队列初始化：
+	    im服务器启动时会分配为网络通信用的重叠结构一段内存，长度为配置文件中OverLap(SingleLinkNet.cpp中的SingleLinkNet::AllocMem函数)
+
+	-) 接入(SingleLinkNet::LTAccept)
+		当accept调用后从重叠结构队列中取一个重叠结构指针付给epoll_event中的联合体data的ptr指针，然后加入连接队列中并将epoll时间改为可读。
+
+	-) 收包(SingleLinkNet::ETRecv函数)
+		第一次接收数据是读取的长度为“接收最大字节长度”(配置文件中的UserMaxPacket配置项或者RcvInnerMaxPackSize配置项)，之后读取长度减去已经读取了的长度(重叠结构中的uiComLen对象来控制读取的长度)再从缓存中读取数据。
+
+	-) 包校验(SingleLinkNet::ParsePack)
+		首先校验包头部，当读取的包长度小于包头长度时(用OverLap中的uiFinishLen和包头的长度比较)继续从缓存中读取数据，包头校验后继续读取数据直到数据达到该包的长度，之后将读取的数据送到工作线程进行相应的业务处理然后读取并校验下一个包
+
+	-) 发包
+		当发生发包请求时，从内存队列中取一个重叠结构指针，然后将发送的数据，数据长度赋给该重叠指针并放到连接重叠结构的发送重叠结构的链表指针(SingleOverLap->pNext)。修改该连接的fd的epoll事件改为写事件。当epoll_wait返回写事件时逐个发送重叠结构下挂在的发送(发送完后要放回内存队列)，当系统的socket的缓存满了的时候(errno == EAGAIN && ret == -1)，重新挂载并记录已经发送的长度(uiFinishLen表示，收包也同样用来表示已经收了多少字节的数据)。发送时出现异常则断开连接。
+
+
+Hash表
+	内存模型：
+	[----哈希表地址1----]
+	[----哈希表地址2----]
+	
+	哈希表内部内存：
+	[----地址区(8bytes)----][----sizeof(key)----][----sizeof(value)----]
+	地址区指向下一个哈希值相同的哈希表元素
+
+	哈希表插入：
+	哈希表删除：
+FixedMemoryPool
+
+
+
+
+http://www.myzhenai.com.cn/post/1337.html
+http://www.tecmint.com/install-wine-in-rhel-centos-and-fedora/
+
+svn://192.168.0.221/youan/cplus/code/trunk/youanIM/LogGatherTool	日志收集工具
+svn://192.168.0.221/youan/cplus/code/trunk/youanIM/ChatMsgRead		聊天中发送图片读取工具
+svn://192.168.0.221/youan/cplus/code/trunk/SmallFileSystem/ImgEliminate 图片删除工具
+svn://192.168.0.221/youan/cplus/code/trunk/SmallFileSystem/ImgUpTool	图片上传工具

@@ -37,7 +37,78 @@ union TestProtocolUn
 {
 	TestProtocol m_tplTestProtocol;
 	char m_szaPacketBuff[MAX_PACKET_SIZE];
+};
+
+struct GetSessionID
+{
+	PacketHead m_phPrtcolHead;
+	unsigned int m_uiIdentifyCode;
+	unsigned short m_usEndCode;
+	inline bool CheckID()
+	{
+		return (m_uiIdentifyCode == IDENTIFY_CODE);
+	}
 }; 
+
+union UnGetSessionID
+{
+	GetSessionID m_GetSessionID;
+	char m_szaPacketBuff[MAX_PACKET_SIZE];
+};
+
+struct GetSessionIDRespd
+{
+	PacketHead m_phPrtcolHead;
+	unsigned long long m_u64SessionID;
+	unsigned short m_usEndCode;
+};
+
+union UnGetSessionIDRespd
+{
+	GetSessionIDRespd m_GetSessionIDRespd;
+	char m_szaPacketBuff[MAX_PACKET_SIZE];
+};
+
+struct GetIOPacket
+{
+	PacketHead m_phPrtcolHead;
+	unsigned long long u64SessionID;
+	unsigned short m_usEndCode;
+};
+
+union UnGetIOPacket
+{
+	GetIOPacket m_GetIOPacket;
+	char m_szaPacketBuff[MAX_PACKET_SIZE];
+};
+
+struct GetIOPacketRespd
+{
+	PacketHead m_phPrtcolHead;
+	unsigned long long m_u64PacketRecv;
+	unsigned long long m_u64PacketSend;
+	unsigned short m_usEndCode;
+};
+
+union UnGetIOPacketRespd
+{
+	GetIOPacketRespd m_GetIOPacketRespd;
+	char m_szaPacketBuff[MAX_PACKET_SIZE];
+};
+
+struct HeartBeat
+{
+	PacketHead m_phPrtcolHead;
+	unsigned long long m_u64TimeStamp;
+	unsigned long long m_u64SessionID;
+	unsigned short m_usEndCode;
+};
+
+union UnHeartBeat
+{
+	HeartBeat m_HeartBeat;
+	char m_szaPacketBuff[MAX_PACKET_SIZE];
+};
 
 #pragma pack()
 
