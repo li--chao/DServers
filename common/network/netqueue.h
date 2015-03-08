@@ -23,8 +23,8 @@ public:
 	}
 
 private:
-	unsigned int m_uiPrevPos;
-	unsigned int m_uiAftPos;
+	unsigned int m_uiPrevPos;		//  write index position
+	unsigned int m_uiAftPos;			//  read index position
 	unsigned int m_uiMaxQueLen;
 	pthread_mutex_t m_mutex;
 	sem_t m_OutSem;
